@@ -26,9 +26,12 @@ class NomClient:
     def __init__(self):
         nom_client = self
         class DaemonThread(threading.Thread):
+            def __init__(self):
+                threading.Thread.__init__(self)
+                self.registered = False
+
             """daemon.requestLoop() does not return, so we spawn a new thread"""
             def run(self):
-                self.registered = False
                 daemon = Pyro4.Daemon()
                 nom_client.uri = daemon.register(nom_client)
                 self.registered = True
