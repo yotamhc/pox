@@ -27,6 +27,19 @@ class NomServer:
     The Nom "database". Keeps a copy of the Nom in memory, as well as a list
     of all registered clients. When a client calls NomServer.put(),
     invalidates + updates the caches of all registered clients
+
+    Visually,  NomClient's connect to the NomServer through
+    the following interfaces:
+
+    ==========================                            ==========================
+    |    NomClient           |                            |    NomServer           |
+    |                        |   any mutating operation   |                        |
+    |                        |  -------------------->     |server.put(nom)         |
+    |                        |                            |                        |
+    |          client.       |   cache invalidation, or   |                        |
+    |            update_nom()|   network event            |                        |
+    |                        |   <-------------------     |                        |
+    ==========================                            ==========================
     """
     def __init__(self):
         def fork_name_server():
@@ -85,7 +98,8 @@ class NomServer:
         client = Pyro4.Proxy(client_uri)
         self.registered.add(client)
 
-    # def unregister_client? TODO
+    def unregister_client(self, client):
+        pass
 
     def get(self):
         log.info("get")
@@ -98,7 +112,6 @@ class NomServer:
             client.update_nom(val)
             log.info("invalidating/updating %s" % client)
             
-
 if __name__ == "__main__":
     nom = NomServer()
     nom.daemon_thread.join()

@@ -22,6 +22,19 @@ class NomClient:
     Keeps a copy of the Nom in its cache. Arbitrary controller applications
     can be implemented on top of NomClient through inheritance. Mutating calls to 
     self.nom transparently write-through to the NomServer
+
+    Visually,  NomClient's connect to the NomServer through
+    the following interfaces:
+
+    ==========================                            ==========================
+    |    NomClient           |                            |    NomServer           |
+    |                        |   any mutating operation   |                        |
+    |                        |  -------------------->     |server.put(nom)         |
+    |                        |                            |                        |
+    |          client.       |   cache invalidation, or   |                        |
+    |            update_nom()|   network event            |                        |
+    |                        |   <-------------------     |                        |
+    ==========================                            ==========================
     """
     def __init__(self):
         nom_client = self
@@ -48,7 +61,20 @@ class NomClient:
         self.nom = self.server.get()
 
     def update_nom(self, nom):
-        """invalidate and update nom. called by NomServer"""
+        """
+        According to Scott's philosophy of SDN, a control application is a
+        function: F(view) => configuration
+
+        This method is the entry point for the POX platform to update the
+        view. 
+
+        The POX platform may invoke it in two situations:
+          i.  NomServer will invalidate this client's cache in the
+              case where another client modifies its copy of the NOM
+
+          ii. Either POX or this client (should) register this method as a
+              handler for network events.
+        """
         log.info("Updating nom from %s to %s " % (self.nom, nom))
         self.nom = nom
         return True
