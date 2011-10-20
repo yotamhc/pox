@@ -478,12 +478,8 @@ class ofp_match (object):
       ip = ipOrIPAndBits
       b = 32 if b is None else b
 
-    #TODO: fix addr using IPAddress
-    """
     if type(ip) is str:
-    if len(ip) == 4:
-      # It's a packed IP
-    """
+      ip = IPAddr(ip)
 
     if bits != None: b = bits
     if b > 32: b = 32
@@ -746,7 +742,7 @@ class ofp_action_output (object):
   def __init__ (self, **kw):
     self.type = OFPAT_OUTPUT
     self.length = 8
-    self.port = 0
+    self.port = None # Purposely bad -- require specification
     self.max_len = 0xffFF
 
     initHelper(self, kw)
@@ -793,7 +789,7 @@ class ofp_action_output (object):
 
 class ofp_action_enqueue (object):
   def __init__ (self, **kw):
-    self.type = 0
+    self.type = OFPAT_ENQUEUE
     self.length = 16
     self.port = 0
     self.pad = b'\x00' * 6
@@ -944,8 +940,18 @@ class ofp_action_vlan_pcp (object):
     return outstr
 
 class ofp_action_dl_addr (object):
-  def __init__ (self, dl_addr = None):
-    self.type = 0
+  @classmethod
+  def set_dst (cls, dl_addr = None):
+    return cls(OFPAT_SET_DL_DST, dl_addr)
+  @classmethod
+  def set_src (cls, dl_addr = None):
+    return cls(OFPAT_SET_DL_SRC, dl_addr)
+
+  def __init__ (self, dl_addr = None, type = None):
+    """
+    'type' should be OFPAT_SET_DL_SRC or OFPAT_SET_DL_DST.
+    """
+    self.type = type
     self.length = 16
     self.dl_addr = EMPTY_ETH
     self.pad = b'\x00' * 6
@@ -1003,8 +1009,18 @@ class ofp_action_dl_addr (object):
     return outstr
 
 class ofp_action_nw_addr (object):
-  def __init__ (self, nw_addr = None):
-    self.type = 0
+  @classmethod
+  def set_dst (cls, nw_addr = None):
+    return cls(OFPAT_SET_NW_DST, nw_addr)
+  @classmethod
+  def set_src (cls, nw_addr = None):
+    return cls(OFPAT_SET_NW_SRC, nw_addr)
+
+  def __init__ (self, nw_addr = None, type = None):
+    """
+    'type' should be OFPAT_SET_NW_SRC or OFPAT_SET_NW_DST
+    """
+    self.type = type
     self.length = 8
 
     if nw_addr is not None:
@@ -1051,7 +1067,7 @@ class ofp_action_nw_addr (object):
 
 class ofp_action_nw_tos (object):
   def __init__ (self, nw_tos = 0):
-    self.type = 0
+    self.type = OFPAT_SET_NW_TOS
     self.length = 8
     self.nw_tos = nw_tos
     self.pad = b'\x00' * 3
@@ -1097,8 +1113,18 @@ class ofp_action_nw_tos (object):
     return outstr
 
 class ofp_action_tp_port (object):
-  def __init__ (self, tp_port = 0):
-    self.type = 0
+  @classmethod
+  def set_dst (cls, tp_port = None):
+    return cls(OFPAT_SET_TP_DST, tp_port)
+  @classmethod
+  def set_src (cls, tp_port = None):
+    return cls(OFPAT_SET_TP_SRC, tp_port)
+
+  def __init__ (self, tp_port = 0, type = None):
+    """
+    'type' is OFPAT_SET_TP_SRC/DST
+    """
+    self.type = type
     self.length = 8
     self.tp_port = tp_port
     self.pad = b'\x00' * 2
