@@ -1,6 +1,16 @@
 #!/usr/bin/env python
 # Nom nom nom nom
 
+# TODO: there is currently a dependency on the order of initialization of
+# client and server... . for example:
+
+#  $ pox.py nom_client nom_server    # blocks indefinitely
+
+# whereas
+
+#  $ pox.py nom_server nom_client    # works
+
+
 from pox.core import core
 import pox.openflow.libopenflow_01 as of
 from pox.lib.revent.revent import *
@@ -36,7 +46,12 @@ class NomClient:
     |                        |   <-------------------     |                        |
     ==========================                            ==========================
     """
-    def __init__(self):
+    def __init__(self, server):
+        # if server is not specified already (e.g., Pyro4.proxy(..), grab it
+        # from this process's core object
+        if not server:
+            server = core.components['NomServer']
+        self.server = server
         nom_client = self
         class DaemonThread(threading.Thread):
             def __init__(self):
@@ -48,17 +63,21 @@ class NomClient:
                 daemon = Pyro4.Daemon()
                 nom_client.uri = daemon.register(nom_client)
                 self.registered = True
+                log.debug("registered = True")
                 daemon.requestLoop()
                 
         self.daemon_thread = DaemonThread()
         self.daemon_thread.start()
+        log.debug("started Pyro4 Dameon thread")
 
-        self.server = Pyro4.Proxy("PYRONAME:nom_server.nom_server")
         # wait to be registered with the Pyro daemon
         while not self.daemon_thread.registered:
             pass
-        self.server.register_client(self.uri)
+        log.debug("registered with Daemon thread")
+        self.server.register_client(self)
+        log.debug("registered with NomServer")
         self.nom = self.server.get()
+        log.debug("Fetched nom from nom_server")
 
     def update_nom(self, nom):
         """
@@ -78,6 +97,7 @@ class NomClient:
         log.info("Updating nom from %s to %s " % (self.nom, nom))
         self.nom = nom
         return True
+        # TODO: react to the change in the NOM
 
 def main():
     import time

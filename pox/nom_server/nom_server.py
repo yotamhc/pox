@@ -20,7 +20,8 @@ sys.excepthook=Pyro4.util.excepthook
 log = core.getLogger()
 
 # TODO: there are currently issues with catching SIGTERM... as a result, pox doesn't
-# shutdown properly... This is a known issue with threading.Thread.
+# shutdown properly... This is a known issue with threading.Thread. We should
+# switch to recoco.
 
 class NomServer:
     """
@@ -55,7 +56,7 @@ class NomServer:
                     s.connect((name_server_hostname, name_server_port)) 
                     return True
                 except Exception, e:
-                    log.warn("name_serving_runnging? exception: %s" % e)
+                    log.warn("name_server already running? exception: %s" % e)
                     return False
 
             if not name_server_already_running():
@@ -75,7 +76,7 @@ class NomServer:
         # don't wait for a response from `put` calls
         server_proxy._pyroOneway.add("put")
         self.nom = CachedNom(server_proxy)
-        self.registered = set()
+        self.registered = []
 
         nom_server = self
 
@@ -92,11 +93,11 @@ class NomServer:
 
         self.daemon_thread = DaemonThread()
         self.daemon_thread.start()
-            
-    def register_client(self, client_uri):
-        log.info("register %s" % client_uri)
-        client = Pyro4.Proxy(client_uri)
-        self.registered.add(client)
+
+    def register_client(self, client):
+        log.info("register %s" % client.uri)
+        client = Pyro4.Proxy(client.uri)
+        self.registered.append(client)
 
     def unregister_client(self, client):
         pass

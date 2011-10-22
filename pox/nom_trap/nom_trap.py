@@ -14,9 +14,8 @@ import subprocess
 import socket
 import time
 
-# TODO: move nom_trap to it's own module, and figure out how to do class
-# imports through core.py
-from nom_server import NomServer
+from pox.nom_server.nom_server import NomServer
+from pox.nom_server.nom_server import CachedNom
 
 sys.excepthook=Pyro4.util.excepthook
 
@@ -59,27 +58,37 @@ class NomTrap(NomServer):
 
     mappings for the client, which we can later use to test invariants.
     """
-    def __init__(self):
-        super(NomTrap,self).__init__()
 
+    _core_name = "NomServer" # we want to be core.NomServer
+
+    def __init__(self):
+        # don't call super constructor, since we don't care about Pyro4
+
+        # Don't make the CachedNom server reference a proxy, since we're
+        # ignoring Pyro4
+        self.nom = CachedNom(self)
+        # for now, only one client will register
+        self.registered = []
         # the nom currently being fed to the client
         self.pending_nom = None
-        # results returned by the client, of the form:
-        #      { input nom => [output nom1, output nom2, ...] }
-        # normally there will be a single output nom, but the client may
-        # execute several mutating operations on the input nom, so we log them
-        # all
-        self.inputnom_2_outputnoms = {}
+        # the client(s?) under test
         self.test_client = None
 
-        # TODO: avoid Pyro4 altogether for NomTraps? Would require changes to
-        # NomClient
+        # results returned by the client, of the form:
+        #      { input nom => [output nom1, output nom2, ...] }
+        # normally there will be a single output nom, but the client may execute
+        # several mutating operations on the input nom, so we log them all
+        self.inputnom_2_outputnoms = {}
 
-    def register(self, client_uri):
+    def register_client(self, client):
+        log.debug("register, nom_trap: %s" % client)
         if len(self.registered) >= 1:
             raise RuntimeError("NomTraps currently only support one client")
-        super(self.__class___,self).register(client_uri) 
-        self.test_client = self.registered.pop()
+
+        # Don't bother creating a Pyro4 Proxy -- just keep a local reference to the
+        # client
+        self.registered.append(client)
+        self.test_client = client
  
     def exercise_client(self, input_noms):
         """
@@ -89,12 +98,12 @@ class NomTrap(NomServer):
         objects, so long as the NomClient can interact with them in the
         standardized way (yet to be defined).
         """
-        if test_client == None:
+        if self.test_client == None:
             raise RuntimeError("Test client has not yet registered")
         
         for nom in input_noms:
             self.pending_nom = nom
-            test_client.update_nom(val)
+            self.test_client.update_nom(nom)
             # TODO: how do we know when the client has finished updating?
             #       it may execute multiple mutating operations as a result of
             #       feeding in the test nom... for now, just sleep for 10
@@ -107,6 +116,7 @@ class NomTrap(NomServer):
 
         Then invalidate the client's cache as normal
         """
+        log.debug("put, nom = ", nom)
         if self.pending_nom not in self.inputnom_2_outputnoms:
             # Does python have a default hash value equivalent? 
             # In ruby: hash = Hash.new { |h,k| h[k] = [] }
@@ -114,7 +124,7 @@ class NomTrap(NomServer):
 
         self.inputnom_2_outputnoms[self.pending_nom].append(nom)
 
-        super(self.__class___,self).put(nom)
+        NomServer.put(self, nom)
             
 if __name__ == "__main__":
     from nom_server.nom_server import CachedNom
@@ -124,5 +134,4 @@ if __name__ == "__main__":
     while not trap.registered:
         log.debug("Waiting for client to connect...")
         time.sleep(1)
-
-    trap.exercise_client([CachedNom(trap)])
+trap.exercise_client([CachedNom(trap)])
