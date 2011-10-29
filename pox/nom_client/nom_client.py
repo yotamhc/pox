@@ -14,6 +14,7 @@
 from pox.core import core
 import pox.openflow.libopenflow_01 as of
 from pox.lib.revent.revent import *
+from pox.lib.recoco.recoco import *
 
 import sys
 import threading
@@ -46,34 +47,16 @@ class NomClient:
     |                        |   <-------------------     |                        |
     ==========================                            ==========================
     """
-    def __init__(self, server):
-        # if server is not specified already (e.g., Pyro4.proxy(..), grab it
-        # from this process's core object
-        if not server:
-            server = core.components['NomServer']
+    def __init__(self, server=core.components['NomServer']):
         self.server = server
-        nom_client = self
-        class DaemonThread(threading.Thread):
-            def __init__(self):
-                threading.Thread.__init__(self)
-                self.registered = False
+        
+        daemon = Pyro4.Daemon()
+        self.uri = daemon.register(self)
+        daemon_sockets = set(daemon.sockets)
 
-            """daemon.requestLoop() does not return, so we spawn a new thread"""
-            def run(self):
-                daemon = Pyro4.Daemon()
-                nom_client.uri = daemon.register(nom_client)
-                self.registered = True
-                log.debug("registered = True")
-                daemon.requestLoop()
-                
-        self.daemon_thread = DaemonThread()
-        self.daemon_thread.start()
-        log.debug("started Pyro4 Dameon thread")
-
-        # wait to be registered with the Pyro daemon
-        while not self.daemon_thread.registered:
-            pass
-        log.debug("registered with Daemon thread")
+        # XXX
+        daemon.events(events)
+        
         self.server.register_client(self)
         log.debug("registered with NomServer")
         self.nom = self.server.get()
