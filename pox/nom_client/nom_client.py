@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env pethon
 # Nom nom nom nom
 
 # TODO: there is currently a dependency on the order of initialization of
@@ -28,6 +28,36 @@ sys.excepthook=Pyro4.util.excepthook
 
 log = core.getLogger()
 
+class DaemonLoop (Task):
+    """
+    Recoco Task for the Pyro4 event loop
+
+    TODO: there should be an event loop construct in pox so that I don't
+    have to deal with Select
+    """
+    def __init__(self, daemon):
+        Task.__init__(self)
+        
+        self.daemon = daemon
+        self.daemon_sockets = set(daemon.sockets)
+        
+        # When core goes up, make sure to schedule ourselves
+        core.addListener(pox.core.GoingUpEvent, self.start)
+
+    def start(self, event):
+        Task.start(self)
+
+    def run(self):
+        while core.running:
+            rlist,_,_ = yield Select(self.daemon_sockets, [], [], 3)
+            events = []
+            for read_sock in rlist:
+                if read_sock in self.daemon_sockets:
+                    events.append(read_sock)
+    
+            if events:
+                self.daemon.events(events)
+
 class NomClient:
     """
     Keeps a copy of the Nom in its cache. Arbitrary controller applications
@@ -49,13 +79,9 @@ class NomClient:
     """
     def __init__(self, server=core.components['NomServer']):
         self.server = server
-        
         daemon = Pyro4.Daemon()
         self.uri = daemon.register(self)
-        daemon_sockets = set(daemon.sockets)
-
-        # XXX
-        daemon.events(events)
+        DaemonLoop(daemon) 
         
         self.server.register_client(self)
         log.debug("registered with NomServer")

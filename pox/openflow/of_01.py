@@ -498,11 +498,13 @@ class OpenFlow_01_Task (Task):
     Task.__init__(self)
     self.port = int(port)
     self.address = address
+    # XXX what is this variable doing?
     self.daemon = True
 
     core.addListener(pox.core.GoingUpEvent, self._handle_GoingUpEvent)
 
   def _handle_GoingUpEvent (self, event):
+    # XXX I don't understand what the next 2 lines are doing...
     global openflowHub
     openflowHub = core.openflow
     self.start()
@@ -561,6 +563,7 @@ class OpenFlow_01_Task (Task):
               new_sock.setblocking(0)
               newcon = Connection(new_sock)
               sockets.append( newcon )
+
               #print str(newcon) + " connected"
             else:
               if con.read() == False:

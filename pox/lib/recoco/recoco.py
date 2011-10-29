@@ -100,7 +100,6 @@ class Task (BaseTask):
 
     BaseTask.__init__(self)
 
-
   def run (self):
     return self.target(*self.args, **self.kwargs)
 
@@ -297,7 +296,6 @@ class Sleep (BlockingOperation):
       return
     scheduler._selectHub.registerTimer(task, self._t, True) # A bit ugly
 
-
 class Select (BlockingOperation):
   """
   Should be very similar to Python select.select()
@@ -308,7 +306,6 @@ class Select (BlockingOperation):
 
   def execute (self, task, scheduler):
     scheduler._selectHub.registerSelect(task, *self._args, **self._kw)
-
 
 defaultRecvFlags = 0
 try:
