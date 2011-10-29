@@ -5,6 +5,8 @@ from pox.core import core
 import pox.openflow.libopenflow_01 as of
 from pox.lib.revent.revent import *
 
+from pox.nom_server.pyro4_daemon_loop import PyroLoop
+
 import Pyro4
 import Pyro4.util
 import sys
@@ -12,6 +14,7 @@ import threading
 import signal
 import subprocess
 import socket
+
 
 from cached_nom import CachedNom
 
@@ -44,8 +47,13 @@ class NomServer:
     """
     def __init__(self):
         def fork_name_server():
-            """Fork a python process to run the name server"""
-
+            """
+            Fork a python process to run the name server
+            
+            NOTE: to avoid having to fork every time you run pox, open a
+            separate terminal and run:
+              $ python -m Pyro4.naming
+            """
             def name_server_already_running():
                 """check if the pyro4 name server is already running"""
                 log.info("checking if name server is already running...")
@@ -78,21 +86,12 @@ class NomServer:
         self.nom = CachedNom(server_proxy)
         self.registered = []
 
-        nom_server = self
-
-        class DaemonThread(threading.Thread):
-            """serveSimple() does not return, so we spawn a new thread"""
-            def run(self):
-                # Start the Pyro event loop
-                Pyro4.Daemon.serveSimple(
-                    {
-                        nom_server: "nom_server.nom_server"
-                    },
-                    ns=True
-                )
-
-        self.daemon_thread = DaemonThread()
-        self.daemon_thread.start()
+        daemon = Pyro4.Daemon()
+        self.uri = daemon.register(self)
+        # register with name server
+        ns = Pyro4.naming.locateNS()
+        ns.register("nom_server.nom_server", self.uri)
+        PyroLoop(daemon)
 
     def register_client(self, client):
         log.info("register %s" % client.uri)

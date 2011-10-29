@@ -52,8 +52,12 @@ class NomClient:
         self.server = server
         daemon = Pyro4.Daemon()
         self.uri = daemon.register(self)
-        PyroLoop(daemon) 
+        PyroLoop(daemon)
         
+        # Can't register with server until core goes up, so register a handler
+        core.addListener(pox.core.GoingUpEvent, self.register_with_server)
+
+    def register_with_server(self, event):
         self.server.register_client(self)
         log.debug("registered with NomServer")
         self.nom = self.server.get()
