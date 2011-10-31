@@ -63,6 +63,7 @@ class NomClient:
         self.nom = self.server.get()
         log.debug("Fetched nom from nom_server")
 
+    # This should really be handler for an Event defined by pox.core
     def update_nom(self, nom):
         """
         According to Scott's philosophy of SDN, a control application is a
