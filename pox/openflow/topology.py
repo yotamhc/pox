@@ -15,6 +15,15 @@
 # You should have received a copy of the GNU General Public License
 # along with POX.  If not, see <http://www.gnu.org/licenses/>.
 
+<<<<<<< local
+=======
+"""
+OpenFlow doesn't know anything about Topology, and Topology doesn't
+know anything about OpenFlow.  This module knows something about both,
+and hooks the two of them together.
+"""
+
+>>>>>>> other
 from pox.lib.revent.revent import *
 import libopenflow_01 as of
 from openflow import *
@@ -35,10 +44,17 @@ log = core.getLogger()
 
 class OpenFlowTopology (EventMixin):
   """
-  OpenFlow doesn't know anything about Topology, and Topology doesn't
-  know anything about OpenFlow.  This class knows something about both,
-  and hooks the two of them together
+  Listens to various OpenFlow-specific events and uses those to manipulate
+  Topology accordingly.
   """
+<<<<<<< local
+=======
+  
+  # Won't boot up OpenFlowTopology until all of these components are loaded
+  # into pox.core. Note though that these components won't be loaded
+  # proactively; they must be specified on the command line (with the
+  # exception of openflow which usally loads automatically)
+>>>>>>> other
   _wantComponents = set(['openflow','topology','openflow_discovery'])
 
   def _resolveComponents (self):
@@ -64,11 +80,23 @@ class OpenFlowTopology (EventMixin):
     return False
 
   def __init__ (self):
+<<<<<<< local
+=======
+    """ Note that self.topology is initialized in _resolveComponents """
+>>>>>>> other
     super(EventMixin, self).__init__()
     if not self._resolveComponents():
       self.listenTo(core)
   
   def _handle_openflow_discovery_LinkEvent (self, event):
+<<<<<<< local
+=======
+    """
+    The discovery module simply sends out LLDP packets, and triggers LinkEvents
+    for discovered switches. It's our job to take these LinkEvents and update
+    pox.topology.
+    """
+>>>>>>> other
     if self.topology is None: return
     link = event.link
     sw1 = self.topology.getEntityByID(link.dpid1)
@@ -116,6 +144,14 @@ class OpenFlowTopology (EventMixin):
 
 
 class OpenFlowPort (Port):
+<<<<<<< local
+=======
+  """
+  A subclass of topology.Port for OpenFlow switch ports.
+
+  Note: Not presently used.
+  """
+>>>>>>> other
   def __init__ (self, ofp):
     # Passed an ofp_phy_port
     Port.__init__(self, ofp.port_no, ofp.hw_addr, ofp.name)
@@ -144,7 +180,28 @@ class OpenFlowPort (Port):
   def __repr__ (self):
     return "<Port #" + str(self.number) + ">"
 
+<<<<<<< local
+=======
+
+>>>>>>> other
 class OpenFlowSwitch (EventMixin, Switch):
+<<<<<<< local
+=======
+  """
+  OpenFlowSwitches are Topology entities (inheriting from topology.Switch)
+  
+  OpenFlowSwitches are persistent; that is, if a switch reconnects, the
+  Connection field of the original OpenFlowSwitch object will simply be reset.
+  
+  For now, OpenFlowSwitch is primarily a proxy to its underlying connection
+  object. Later, we'll possibly add more explicit operations the client can
+  perform.
+  
+  Note that for the purposes of the debugger, we can interpose on
+  a switch entity by enumerating all listeners for the events listed below, and
+  triggering mock events for those listeners.
+  """
+>>>>>>> other
   _eventMixin_events = set([
     SwitchJoin,
     SwitchLeave,
@@ -232,6 +289,7 @@ class OpenFlowSwitch (EventMixin, Switch):
 
   def __repr__ (self):
     return "<%s %s>" % (self.__class__.__name__, dpidToStr(self.dpid))
+
 
 def launch ():
   if not core.hasComponent("openflow_topology"):

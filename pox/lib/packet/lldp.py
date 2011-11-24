@@ -132,6 +132,7 @@ class lldp (packet_base):
             return 2 + length
         else:
             self.msg( '(lldp tlv parse) warning unknown tlv type (%u)' % (type,) )
+            # TODO: unknown_tlv is an undefined variable! Check me in?
             self.tlvs.append(unknown_tlv(array[0: 2 + length]))
             return 2 + length
 
@@ -211,6 +212,16 @@ class lldp (packet_base):
 #======================================================================
 #                          TLV definitions
 #======================================================================
+        
+def initHelper(self, kw):
+  # TODO: implement me! The classes below depend on this, but it doesn't
+  # seem to be present 
+  # (throwing an exception: 
+  #   File "/Users/rcs/Research/UCB/mainline_pox/pox/lib/packet/lldp.py", line 245, in __init__
+  #    initHelper(self, kw)
+  # NameError: global name 'initHelper' is not defined
+  pass
+ 
 
 class chassis_id:
     tlv_type = lldp.CHASSIS_ID_TLV
@@ -243,7 +254,7 @@ class chassis_id:
             self.arr = raw
             self.parse()
         initHelper(self, kw)
-
+   
     def fill(self, _subtype, strval):
         self.strlen  = 1 + len(strval)
         self.subtype = _subtype

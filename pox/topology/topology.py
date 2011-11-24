@@ -37,8 +37,24 @@ class EntityJoin (EntityEvent): pass
 class EntityLeave (EntityEvent): pass
 
 class Entity (object):
+<<<<<<< local
   def __init__ (self, id):
     self.id = id
+=======
+  """ 
+  Note that the Entity class is intentionally simple; It only serves as a 
+  convenient SuperClass type.
+  
+  It's up to subclasses to implement specific functionality (e.g. OpenFlow1.0 
+  switch functionality). This is possible since Python is a dynamic language... 
+  the purpose of this design decision is to prevent protocol specific details
+  from being leaked into this module... But this design decision does /not/
+  imply that pox.toplogy serves to define a generic interface to abstract
+  entity types.
+  """
+  def __init__ (self, identifier):
+    self.identifier = identifier
+>>>>>>> other
 
 class Host (Entity):
   pass

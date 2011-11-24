@@ -10,11 +10,12 @@
 
 #  $ pox.py nom_server nom_client    # works
 
-
 from pox.core import core
 import pox.openflow.libopenflow_01 as of
 from pox.lib.revent.revent import *
 from pox.lib.recoco.recoco import *
+
+from pox.nom_server.pyro4_daemon_loop import PyroLoop
 
 import sys
 import threading
@@ -27,36 +28,6 @@ import Pyro4.util
 sys.excepthook=Pyro4.util.excepthook
 
 log = core.getLogger()
-
-class DaemonLoop (Task):
-    """
-    Recoco Task for the Pyro4 event loop
-
-    TODO: there should be an event loop construct in pox so that I don't
-    have to deal with Select
-    """
-    def __init__(self, daemon):
-        Task.__init__(self)
-        
-        self.daemon = daemon
-        self.daemon_sockets = set(daemon.sockets)
-        
-        # When core goes up, make sure to schedule ourselves
-        core.addListener(pox.core.GoingUpEvent, self.start)
-
-    def start(self, event):
-        Task.start(self)
-
-    def run(self):
-        while core.running:
-            rlist,_,_ = yield Select(self.daemon_sockets, [], [], 3)
-            events = []
-            for read_sock in rlist:
-                if read_sock in self.daemon_sockets:
-                    events.append(read_sock)
-    
-            if events:
-                self.daemon.events(events)
 
 class NomClient:
     """
@@ -81,13 +52,18 @@ class NomClient:
         self.server = server
         daemon = Pyro4.Daemon()
         self.uri = daemon.register(self)
-        DaemonLoop(daemon) 
+        PyroLoop(daemon)
         
+        # Can't register with server until core goes up, so register a handler
+        core.addListener(pox.core.GoingUpEvent, self.register_with_server)
+
+    def register_with_server(self, event):
         self.server.register_client(self)
         log.debug("registered with NomServer")
         self.nom = self.server.get()
         log.debug("Fetched nom from nom_server")
 
+    # This should really be handler for an Event defined by pox.core
     def update_nom(self, nom):
         """
         According to Scott's philosophy of SDN, a control application is a

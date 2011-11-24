@@ -20,6 +20,13 @@
 # been substantially rewritten.
 
 """
+This module discovers OpenFlow Switches in the network by sending out LLDP
+packets. To be notified of this information, listen to LinkEvents on the
+discovery object below.
+
+Note that of_01.Task /passively/ listens to switch connections. This module
+/actively/ discovers switches in the network.
+
 It's possible that some of this should be abstracted out into a generic
 Discovery module, or a Discovery superclass.
 """
@@ -47,7 +54,6 @@ TIMEOUT_CHECK_PERIOD = 5.0
 LINK_TIMEOUT         = 10.0
 
 log = core.getLogger()
-
 
 class LLDPSender (object):
   """
@@ -300,6 +306,7 @@ class Discovery (EventMixin):
           # to fit into an ethernet address
           if len(lldph.tlvs[0].id) == 6:
             try:
+              # TODO: `s` is not defined. What do I refer to?
               originatorDPID = struct.unpack("!Q",'\x00\x00' + s)[0]
             except:
               pass
@@ -366,7 +373,6 @@ class Discovery (EventMixin):
       if link.dpid2 == dpid and link.port2 == port:
         return True
     return False
-
 
 def launch ():
   core.registerNew(Discovery)

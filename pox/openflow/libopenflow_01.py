@@ -100,7 +100,7 @@ class ofp_header (object):
     outstr += prefix + 'length:  ' + str(self.length) + '\n'
     outstr += prefix + 'xid:     ' + str(self.xid) + '\n'
     return outstr
-
+  
   def __str__ (self):
     return self.__class__.__name__ + "\n  " + self.show('  ').strip()
 
@@ -584,6 +584,8 @@ class ofp_match (object):
     (self._dl_vlan, self._dl_vlan_pcp) = struct.unpack_from("!HB", binaryString, 18)
     (self._dl_type, self._nw_tos, self._nw_proto) = struct.unpack_from("!HBB", binaryString, 22)
     (self._nw_src, self._nw_dst, self._tp_src, self._tp_dst) = struct.unpack_from("!LLHH", binaryString, 28)
+    self._nw_src = IPAddr(self._nw_src)
+    self._nw_dst = IPAddr(self._nw_dst)
 
     self.wildcards = self._normalize_wildcards(wildcards) # Override
     return binaryString[40:]
@@ -1573,7 +1575,7 @@ class ofp_queue_get_config_request (ofp_header):
     packed = ""
     packed += ofp_header.pack(self)
     packed += struct.pack("!H", self.port)
-    packed += pad
+    packed += self.pad
     return packed
 
   def unpack (self, binaryString):
@@ -2572,7 +2574,7 @@ class ofp_packet_in (ofp_header):
     packed = ""
     packed += ofp_header.pack(self)
     packed += struct.pack("!LHHBB", self.buffer_id & 0xffFFffFF, self.total_len, self.in_port, self.reason, self.pad)
-    packet += self.data
+    packed += self.data
     return packed
 
   def unpack (self, binaryString):
@@ -3098,7 +3100,7 @@ class ofp_vendor (ofp_header):
     packed = ""
     packed += ofp_header.pack(self)
     packed += struct.pack("!L", self.vendor)
-    packet += self.data
+    packed += self.data
     return packed
 
   def unpack (self, binaryString):
@@ -3130,7 +3132,7 @@ class ofp_vendor (ofp_header):
     outstr += prefix + 'header: \n'
     outstr += ofp_header.show(self, prefix + '  ')
     outstr += prefix + 'vendor: ' + str(self.vendor) + '\n'
-    outstr += prefix + 'data: ' + data + '\n'
+    outstr += prefix + 'data: ' + self.data + '\n'
     return outstr
 
 class ofp_features_request (ofp_header):
