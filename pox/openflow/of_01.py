@@ -15,6 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with POX.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+In charge of OpenFLow 1.0 switches.
+
+NOTE: this module is loaded automatically by pox.py
+"""
+
 from pox.core import core
 import pox
 import pox.lib.util
@@ -101,10 +107,6 @@ def handle_ERROR_MSG (con, msg): #A
   log.error(str(con) + " OpenFlow Error:\n" + msg.show(str(con) + " Error: ").strip())
   openflowHub.raiseEventNoErrors(ErrorIn, con, msg)
   con.raiseEventNoErrors(ErrorIn, con, msg)
-
-def handle_FLOW_REMOVED (con, msg): #A
-  openflowHub.raiseEventNoErrors(FlowRemoved, con, msg)
-  con.raiseEventNoErrors(FlowRemoved, con, msg)
 
 def handle_BARRIER (con, msg):
   openflowHub.raiseEventNoErrors(BarrierIn, con, msg)
@@ -216,6 +218,7 @@ statsHandlerMap = {
 # Deferred sending should be unusual, so don't worry too much about efficiency
 class DeferredSender (threading.Thread):
   def __init__ (self):
+    # Threads, not recoco?
     threading.Thread.__init__(self)
     self._dataForConnection = {}
     self._lock = threading.RLock()
@@ -226,6 +229,10 @@ class DeferredSender (threading.Thread):
     self.start()
 
   def _sliceup (self, data):
+    """
+    Takes an array of data bytes, and slices into elements of
+    select.PIPE_BUF bytes each
+    """
     out = []
     while len(data) > select.PIPE_BUF:
       out.append(data[0:select.PIPE_BUF])
@@ -309,9 +316,14 @@ class DeferredSender (threading.Thread):
             except:
               pass
 
+# Used by the Connection class below
 deferredSender = DeferredSender()
 
 class Connection (EventMixin):
+  """
+  A Connection object represents a single TCP session with an openflow-enabled switch.
+  If the switch reconnects, a new connection object is instantiated.
+  """
   _eventMixin_events = set([
     ConnectionUp,
     ConnectionDown,
@@ -328,7 +340,8 @@ class Connection (EventMixin):
     QueueStatsReceived,
     FlowRemoved,
   ])
-
+  
+  # Globally unique identifier for the Connection instance
   ID = 0
 
   def msg (self, m):
@@ -347,7 +360,7 @@ class Connection (EventMixin):
 
     self.sock = sock
     self.buf = ''
-    Connection.ID += 1;
+    Connection.ID += 1
     self.ID = Connection.ID
     self.dpid = None
     self.features = None
@@ -361,6 +374,13 @@ class Connection (EventMixin):
     return self.sock.fileno()
 
   def disconnect (self, hard = False):
+    """
+    disconnect this Connection (usually not invoked manually).
+
+    'hard' is usually used under error conditions, and means we don't care
+    about closing it gracefully; we just want it closed.  This could be done
+    more elegantly.
+    """
     if self.disconnected and not hard:
       self.err("already disconnected!")
     if hard:
@@ -402,6 +422,14 @@ class Connection (EventMixin):
       pass
 
   def send (self, data):
+    """
+    Send raw data to the switch.
+
+    Generally, data is a bytes object.  If not, we check if it has a pack()
+    method and call it (hoping the result will be a bytes object).  This
+    way, you can just pass one of the OpenFlow objects from the OpenFlow
+    library to it and get the expected result, for example.
+    """
     if self.disconnected: return
     if type(data) is not bytes:
       if hasattr(data, 'pack'):
@@ -425,6 +453,13 @@ class Connection (EventMixin):
         self.disconnect()
 
   def read (self):
+    """
+    Read data from this connection.  Generally this is just called by the
+    main OpenFlow loop below.
+
+    Note: if no data is available to read, this method will block. Only invoke
+    after select() has returned this socket.
+    """
     d = self.sock.recv(2048)
     if len(d) == 0:
       return False
@@ -452,7 +487,7 @@ class Connection (EventMixin):
     return True
 
   def _incoming_stats_reply (self, ofp):
-    # This assumes that you don't recieve multiple stats replies
+    # This assumes that you don't receive multiple stats replies
     # to different requests out of order/interspersed.
     more = (ofp.flags & 1) != 0
     if more:
@@ -462,7 +497,7 @@ class Connection (EventMixin):
                   str(ofp.type))
         self._previous_stats = []
         return
-
+      
     if len(self._previous_stats) != 0:
       if ((ofp.xid == self._previous_stats[0].xid) and
           (ofp.type == self._previous_stats[0].type)):
@@ -494,27 +529,25 @@ class Connection (EventMixin):
 from pox.lib.recoco.recoco import *
 
 class OpenFlow_01_Task (Task):
+  """
+  The main recoco thread for listening to openflow messages
+  """
   def __init__ (self, port = 6633, address = '0.0.0.0'):
     Task.__init__(self)
     self.port = int(port)
     self.address = address
-    # XXX what is this variable doing?
+    # This variable has no effect, I believe
     self.daemon = True
 
     core.addListener(pox.core.GoingUpEvent, self._handle_GoingUpEvent)
 
   def _handle_GoingUpEvent (self, event):
-    # XXX I don't understand what the next 2 lines are doing...
+    # The next two lines are somewhat confusing, but they're referenced later
     global openflowHub
     openflowHub = core.openflow
     self.start()
 
   def run (self):
-    #TODO: This is actually "the main thread", and should actually be pulled out
-    #      so that other things (OpenFlow 1.1 switches, etc.) can use it too.
-    #      Probably this should mean that this thread will run the cooperative
-    #      threads.
-
     # List of open sockets/connections to select on
     sockets = []
 
@@ -525,7 +558,7 @@ class OpenFlow_01_Task (Task):
     sockets.append(listener)
     wsocks = []
 
-    log.debug("Listening for connections")
+    log.debug("Listening for connections on %s:%s" % (self.address, self.port))
 
     con = None
     while core.running:
@@ -561,9 +594,10 @@ class OpenFlow_01_Task (Task):
             if con is listener:
               new_sock = listener.accept()[0]
               new_sock.setblocking(0)
+              # Note that instantiating a Connection object fires a ConnectionUp event
+              # (after negotation has completed)
               newcon = Connection(new_sock)
               sockets.append( newcon )
-
               #print str(newcon) + " connected"
             else:
               if con.read() == False:
