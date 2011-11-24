@@ -23,8 +23,8 @@ log = core.getLogger()
 
 class NomTrap(NomServer):
     """
-    This is a testing framework for controller applications (specifically
-    those that inherit from NomClient)
+    This is a testing framework for /distributed/ controller applications
+    (specifically those that inherit from NomClient)
 
     We can think of the controller application as a function:
         F(view) => configuration
