@@ -37,10 +37,6 @@ class EntityJoin (EntityEvent): pass
 class EntityLeave (EntityEvent): pass
 
 class Entity (object):
-<<<<<<< local
-  def __init__ (self, id):
-    self.id = id
-=======
   """ 
   Note that the Entity class is intentionally simple; It only serves as a 
   convenient SuperClass type.
@@ -52,9 +48,8 @@ class Entity (object):
   imply that pox.toplogy serves to define a generic interface to abstract
   entity types.
   """
-  def __init__ (self, identifier):
-    self.identifier = identifier
->>>>>>> other
+  def __init__ (self, id):
+    self.id = id
 
 class Host (Entity):
   pass
