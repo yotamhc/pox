@@ -127,11 +127,11 @@ class NomTrap(NomServer):
         NomServer.put(self, nom)
             
 if __name__ == "__main__":
-    from nom_server.nom_server import CachedNom
+    from pox.nom_server.nom_server import CachedNom
 
     trap = NomTrap()
     # wait for the client to connect
     while not trap.registered:
         log.debug("Waiting for client to connect...")
+        trap.exercise_client([CachedNom(trap)])
         time.sleep(1)
-trap.exercise_client([CachedNom(trap)])
