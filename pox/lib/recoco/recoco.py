@@ -14,6 +14,10 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with POX.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
+#      
+
 
 from __future__ import print_function
 from collections import deque
@@ -99,7 +103,6 @@ class Task (BaseTask):
     self.gen = self.run(*args, **kwargs)
 
     BaseTask.__init__(self)
-
 
   def run (self):
     return self.target(*self.args, **self.kwargs)
@@ -297,7 +300,6 @@ class Sleep (BlockingOperation):
       return
     scheduler._selectHub.registerTimer(task, self._t, True) # A bit ugly
 
-
 class Select (BlockingOperation):
   """
   Should be very similar to Python select.select()
@@ -308,7 +310,6 @@ class Select (BlockingOperation):
 
   def execute (self, task, scheduler):
     scheduler._selectHub.registerSelect(task, *self._args, **self._kw)
-
 
 defaultRecvFlags = 0
 try:
