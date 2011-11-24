@@ -37,6 +37,7 @@ exec python -O "$0" "$@"
 from pox.core import core
 import pox.openflow.openflow
 import pox.openflow.of_01
+import pox.nom_trap
 
 # Turn on extra info for event exceptions
 import pox.lib.revent.revent as revent
@@ -221,6 +222,8 @@ def doLaunch ():
 cli = True
 verbose = False
 enable_openflow = True
+global debug
+debug = False
 
 def _opt_no_openflow (v):
   global enable_openflow
@@ -234,6 +237,10 @@ def _opt_no_cli (v):
 def _opt_verbose (v):
   global verbose
   verbose = str(v).lower() == "true"
+
+def _opt_debug (v):
+  global debug
+  debug = str(v).lower() == "true"
 
 def process_options ():
   # TODO: define this list somewhere else. Or use an option-parsing library.
@@ -268,11 +275,15 @@ def post_startup ():
   if enable_openflow:
     pox.openflow.of_01.launch() # Always launch of_01
 
+  if debug:
+    pox.nom_trap.launch()
+
 def _monkeypatch_console ():
   """
   The readline in pypy (which is the readline from pyrepl) turns off output
   postprocessing, which disables normal NL->CRLF translation.  An effect of
   this is that output *from other threads* (like log messages) which try to
+  global debug
   print newlines end up just getting linefeeds and the output is all stair-
   stepped.  We monkeypatch the function in pyrepl which disables OPOST to turn
   OPOST back on again.  This doesn't immediately seem to break anything in the

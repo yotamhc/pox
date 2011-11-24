@@ -42,6 +42,10 @@ class NomTrap (EventMixin):
     
   # we want to be core.topology, so that we can interpose transparently
   _core_name = "topology"
+  
+  def notify_SwitchJoin_registration(self, handler):
+    """ Someone just registered a handler for SwitchJoin """
+    self.fuzzer.switchjoin_registration(handler)
    
   # The event types we want to be notified of listener registrations for
   _relevant_EventTypes = {
@@ -57,10 +61,6 @@ class NomTrap (EventMixin):
     # Wait for client to register themselves with us
     self.fuzzer = FuzzTester()
     
-  def notify_SwitchJoin_registration(self, handler):
-    """ Someone just registered a handler for SwitchJoin """
-    self.fuzzer.switchjoin_registration(handler)
-  
   def addListener (self, eventType, handler, once=False, weak=False, priority=None, byName=False):  
     """
     We overwrite this method so that we are notified when a client
