@@ -17,10 +17,10 @@ class CachedNom:
         self.nom = {}
         self.nom_server = nom_server
 
-    def nom():
+    def nom(self):
         return self.nom
 
-    def nom_server():
+    def nom_server(self):
         return self.nom_server
 
     def __getattr__(self,name):
