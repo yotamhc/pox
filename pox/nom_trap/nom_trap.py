@@ -11,7 +11,6 @@ import Pyro4
 import Pyro4.util
 import sys
 import threading
-import signal
 import subprocess
 import socket
 import time
@@ -44,6 +43,7 @@ class NomTrap (EventMixin):
   _core_name = "topology"
   
   def notify_SwitchJoin_registration(self, handler):
+    log.debug("SwitchJoin handler registered")
     """ Someone just registered a handler for SwitchJoin """
     self.fuzzer.switchjoin_registration(handler)
    

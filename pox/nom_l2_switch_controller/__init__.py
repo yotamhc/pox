@@ -25,15 +25,13 @@ def launch ():
   """
   from pox.core import core
 
-  global debug
-  # TODO: figure out a more transparent way to specify this...
-  if debug:
-    import pox.topology
-    pox.topology.launch() 
-    import pox.openflow.discovery
-    pox.openflow.discovery.launch()
-    import pox.openflow.topology
-    pox.openflow.topology.launch()
+  import pox.topology
+  pox.topology.launch() 
+  import pox.openflow.discovery
+  pox.openflow.discovery.launch()
+  # Will be overwritten by pox.py:post_startup if debug is true
+  import pox.openflow.topology
+  pox.openflow.topology.launch()
 
   import nom_l2_switch_controller
   core.registerNew(nom_l2_switch_controller.nom_l2_switch_controller)

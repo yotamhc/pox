@@ -59,6 +59,8 @@ class nom_l2_switch_controller (EventMixin):
     log.debug("nom_l2_switch_controller booting...")
     
     # For now, just add listeners for Topology.EntityJoin events
+    # TODO: don't throw the error here! Need to wait for topology to register
+    # anyway, in case the debugger interposes on core.components['topology']
     topo = core.components['topology']
     assert(topo is not None, "pox.topology not loaded yet!")
     self.listenTo(topo)
