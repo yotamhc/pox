@@ -271,6 +271,35 @@ class POXCore (EventMixin):
     self.components[name] = component
     self.raiseEventNoErrors(ComponentRegistered, name, component)
 
+  def resolveComponents(sink, components):
+    """
+    Static method. If a component depends on having other components
+    registered with core before it can boot, it can use this method to 
+    check for registration, and listen to events on those dependancies.
+     
+    sink - the component waiting on dependancies
+    components - a list of dependant component names
+    """
+    if components == None or len(components) == 0:
+      components = None
+      return True
+  
+    got = set()
+    for c in components:
+      if core.hasComponent(c):
+        setattr(sink, c, getattr(core, c))
+        sink.listenTo(getattr(core, c), prefix=c)
+        got.add(c)
+      else:
+        setattr(sink, c, None)
+    for c in got:
+      components.remove(c)
+    if len(components) == 0:
+       = None
+      log.debug(sink.__class__.__name__ + " ready")
+      return True
+    return False
+
   def __getattr__ (self, name):
     if name not in self.components:
       raise AttributeError("'%s' not registered" % (name,))
