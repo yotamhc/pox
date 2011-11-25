@@ -7,15 +7,11 @@ from pox.lib.revent.revent import *
 from pox.topology.topology import *
 from pox.nom_trap.fuzzer import FuzzTester
 
-import Pyro4
-import Pyro4.util
 import sys
 import threading
 import subprocess
 import socket
 import time
-
-sys.excepthook=Pyro4.util.excepthook
 
 log = core.getLogger()
 
@@ -43,8 +39,8 @@ class NomTrap (EventMixin):
   _core_name = "topology"
   
   def notify_SwitchJoin_registration(self, handler):
-    log.debug("SwitchJoin handler registered")
     """ Someone just registered a handler for SwitchJoin """
+    log.debug("SwitchJoin handler registered")
     self.fuzzer.switchjoin_registration(handler)
    
   # The event types we want to be notified of listener registrations for
@@ -58,10 +54,13 @@ class NomTrap (EventMixin):
   }
   
   def __init__(self):
-    # Wait for client to register themselves with us
+    # We wait for the client to register themselves with us
     self.fuzzer = FuzzTester()
-    
+    # alternatively, delegate all missing attributes to self.fuzzer?
+    self._eventMixin_events = self.fuzzer._eventMixin_events
+
   def addListener (self, eventType, handler, once=False, weak=False, priority=None, byName=False):  
+    log.debug("addListener called, handler=%s" % str(handler))
     """
     We overwrite this method so that we are notified when a client
     registers a handler
@@ -69,9 +68,9 @@ class NomTrap (EventMixin):
     if eventType in self._relevant_EventTypes:
       # For now, we assume that the client was the one registering the handler...
       # TODO: add an argument to addListener which is a reference to the registrator?
-      self._relevant_EventTypes[eventType](handler)
+      self._relevant_EventTypes[eventType](self, handler)
       
     EventMixin.addListener(self, eventType, handler, once, weak, priority, byName)
   
 if __name__ == "__main__":
-  pass
+ pass

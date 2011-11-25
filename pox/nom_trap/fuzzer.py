@@ -7,16 +7,12 @@ from pox.lib.revent.revent import *
 
 from pox.topology.topology import Topology
 
-import Pyro4
-import Pyro4.util
 import sys
 import threading
 import signal
 import subprocess
 import socket
 import time
-
-sys.excepthook=Pyro4.util.excepthook
 
 log = core.getLogger()
 

@@ -19,19 +19,19 @@
 This package contains a nom-based L2 learning switch.
 """
 
-def launch ():
+def launch (debug=False):
+  # TODO: need a more transparent mechanism for specifying the debug flag...
   """
   Starts a NOM-based L2 learning switch, along with the discovery and topology modules
   """
-  from pox.core import core
-
-  import pox.topology
-  pox.topology.launch() 
-  import pox.openflow.discovery
-  pox.openflow.discovery.launch()
-  # Will be overwritten by pox.py:post_startup if debug is true
-  import pox.openflow.topology
-  pox.openflow.topology.launch()
+  if not debug:
+    import pox.topology
+    pox.topology.launch() 
+    import pox.openflow.discovery
+    pox.openflow.discovery.launch()
+    import pox.openflow.topology
+    pox.openflow.topology.launch()
 
   import nom_l2_switch_controller
+  from pox.core import core
   core.registerNew(nom_l2_switch_controller.nom_l2_switch_controller)

@@ -45,6 +45,33 @@ from pox.lib.revent.revent import *
 log = core.getLogger()
 
 class nom_l2_switch_controller (EventMixin):
+  # TODO: build this "want component" mechanism into pox itself. It seems to
+  # be duplicated in a few places (e.g., pox.openflow.topology)
+  _wantComponents = set(['topology'])
+
+  def _resolveComponents (self):
+    """ TODO: completely redundant with pox.openflow.topology """
+    if self._wantComponents == None or len(self._wantComponents) == 0:
+      self._wantComponents = None
+      return True
+  
+    got = set()
+    for c in self._wantComponents:
+      if core.hasComponent(c):
+        setattr(self, c, getattr(core, c))
+        self.listenTo(getattr(core, c), prefix=c)
+        got.add(c)
+      else:
+        setattr(self, c, None)
+    for c in got:
+      self._wantComponents.remove(c)
+    if len(self._wantComponents) == 0:
+      self.wantComponents = None
+      log.debug(self.__class__.__name__ + " ready")
+      return True
+    #log.debug(self.__class__.__name__ + " still wants: " + (', '.join(self._wantComponents)))
+    return False
+
   def __init__ (self):
     """
     Precondition: pox.topology is loaded 
@@ -59,13 +86,14 @@ class nom_l2_switch_controller (EventMixin):
     log.debug("nom_l2_switch_controller booting...")
     
     # For now, just add listeners for Topology.EntityJoin events
-    # TODO: don't throw the error here! Need to wait for topology to register
-    # anyway, in case the debugger interposes on core.components['topology']
-    topo = core.components['topology']
-    assert(topo is not None, "pox.topology not loaded yet!")
-    self.listenTo(topo)
+    if not self._resolveComponents():
+      self.listenTo(core)
+  
+  def _handle_ComponentRegistered (self, event):
+    if self._resolveComponents():
+      return EventRemove
 
-  def _handle_SwitchJoin(self, join_event):
+  def _handle_topology_SwitchJoin(self, join_event):
     # TODO: what if there are already switches in topology before we boot?
     # This handler won't be triggered for them...
     # Further argument for a `nom_update()` method? 
