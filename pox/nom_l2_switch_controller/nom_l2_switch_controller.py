@@ -49,29 +49,6 @@ class nom_l2_switch_controller (EventMixin):
   # be duplicated in a few places (e.g., pox.openflow.topology)
   _wantComponents = set(['topology'])
 
-  def _resolveComponents (self):
-    """ TODO: completely redundant with pox.openflow.topology """
-    if self._wantComponents == None or len(self._wantComponents) == 0:
-      self._wantComponents = None
-      return True
-  
-    got = set()
-    for c in self._wantComponents:
-      if core.hasComponent(c):
-        setattr(self, c, getattr(core, c))
-        self.listenTo(getattr(core, c), prefix=c)
-        got.add(c)
-      else:
-        setattr(self, c, None)
-    for c in got:
-      self._wantComponents.remove(c)
-    if len(self._wantComponents) == 0:
-      self.wantComponents = None
-      log.debug(self.__class__.__name__ + " ready")
-      return True
-    #log.debug(self.__class__.__name__ + " still wants: " + (', '.join(self._wantComponents)))
-    return False
-
   def __init__ (self):
     """
     Precondition: pox.topology is loaded 
@@ -86,11 +63,11 @@ class nom_l2_switch_controller (EventMixin):
     log.debug("nom_l2_switch_controller booting...")
     
     # For now, just add listeners for Topology.EntityJoin events
-    if not self._resolveComponents():
+    if not core.resolveComponents(self, self._wantComponents):
       self.listenTo(core)
   
   def _handle_ComponentRegistered (self, event):
-    if self._resolveComponents():
+    if core.resolveComponents(self, self._wantComponents):
       return EventRemove
 
   def _handle_topology_SwitchJoin(self, join_event):
