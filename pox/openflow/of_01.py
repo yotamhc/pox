@@ -16,9 +16,10 @@
 # along with POX.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-In charge of OpenFLow 1.0 switches.
+In charge of OpenFlow 1.0 switches.
 
-NOTE: this module is loaded automatically by pox.py
+NOTE: This module is loaded automatically on startup unless POX is run
+      with --no-openflow .
 """
 
 from pox.core import core
@@ -26,7 +27,7 @@ import pox
 import pox.lib.util
 from pox.lib.revent.revent import EventMixin
 
-from pox.openflow.openflow import *
+from pox.openflow import *
 
 log = core.getLogger()
 
@@ -57,7 +58,7 @@ def handle_ECHO_REQUEST (con, msg): #S
   reply.header_type = of.OFPT_ECHO_REPLY
   con.send(reply.pack())
 
-def handle_FLOW_REMOVED (con, msg):
+def handle_FLOW_REMOVED (con, msg): #A
   openflowHub.raiseEventNoErrors(FlowRemoved, con, msg)
   con.raiseEventNoErrors(FlowRemoved, con, msg)
 
@@ -536,13 +537,11 @@ class OpenFlow_01_Task (Task):
     Task.__init__(self)
     self.port = int(port)
     self.address = address
-    # This variable has no effect, I believe
-    self.daemon = True
 
     core.addListener(pox.core.GoingUpEvent, self._handle_GoingUpEvent)
 
   def _handle_GoingUpEvent (self, event):
-    # The next two lines are somewhat confusing, but they're referenced later
+    # We keep our own module-level reference to the main OpenFlow component
     global openflowHub
     openflowHub = core.openflow
     self.start()
@@ -639,11 +638,10 @@ for h in handlerMap:
   #print handlerMap[h]
 
 
-def launch (*args, **kw):
+def launch (port = 6633, address = "0.0.0.0"):
   if core.hasComponent('of_01'):
     return None
-  l = OpenFlow_01_Task(*args, **kw)
-  #l = OpenFlow_01_Loop(*args, **kw)
+  l = OpenFlow_01_Task(port = int(port), address = address)
   core.register("of_01", l)
   return l
 

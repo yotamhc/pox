@@ -173,8 +173,9 @@ class POXCore (EventMixin):
   def version_string (self):
     return "POX " + '.'.join(map(str, self.version))
 
-  # Why is self not the first param? What does _self signify?
   def callLater (_self, _func, *args, **kw):
+    # first arg is `_self` rather than `self` in case the user wants
+    # to specify self as a keyword argument
     """
     Call the given function with the given arguments within the context
     of the co-operative threading environment.
@@ -191,8 +192,9 @@ class POXCore (EventMixin):
     """
     _self.scheduler.callLater(_func, *args, **kw)
 
-  # Why is self not the first param? What does _self signify?
   def raiseLater (_self, _obj, *args, **kw):
+    # first arg is `_self` rather than `self` in case the user wants
+    # to specify self as a keyword argument
     """
     This is similar to callLater(), but provides an easy way to raise a
     revent event from outide the co-operative context.

@@ -38,6 +38,7 @@
 
 import struct
 import pox.openflow.libopenflow_01 as of
+from pox.openflow import *
 
 from pox.lib.packet.tcp       import tcp
 from pox.lib.packet.udp       import udp
@@ -175,7 +176,7 @@ class AddFlowEntryCommand(FlowModCommand):
 def modifyFlow(con, inport, packet, buf, bufid=None):
   """Modify a switch's flow table
   """
-  command = flowModCommand(inport, packet, buf, bufid)
+  command = FlowModCommand(inport, packet, buf, bufid)
   sendCommand(con, command)
   
 def addFlowEntry(con, inport, match, actions, bufid=None):
