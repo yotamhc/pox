@@ -33,15 +33,17 @@ class MockConnection (Connection):
     self.disconnected = False 
   
   def send (self, data):
+    log.debug("Client sending data %s on switch %s" % (str(data), str(self.switch)))
+    
     if self.disconnected:
+      log.warn("Switch disconnected, not delivering message")
       return
     
-    # TODO: make this do something. Should have a separate forwarding engine entity
-    log.debug("client sending data %s on switch %s" % (str(data), str(self.switch)))
+    # TODO: make this do something. We should have a separate forwarding engine entity
     self.data_sent.append(data)
 
   def read (self):
-    return None
+    return []
 
   def __str__ (self):
     return "[MockCon " + str(self.ID) + "/" + str(self.dpid) + "]"

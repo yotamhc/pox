@@ -45,11 +45,11 @@ class FuzzTester (Topology):
       self.running = False
       
       # TODO: make it easier for client to tweak these
-      self.failure_rate = 0.01
-      self.recovery_rate = 0.01
-      self.drop_rate = 0.01
-      self.delay_rate = 0.01
-      self.of_message_rate = 0.01
+      self.failure_rate = 0.5
+      self.recovery_rate = 0.5
+      self.drop_rate = 0.5
+      self.delay_rate = 0.5
+      self.of_message_generation_rate = 0.5
       
       # Logical time for the simulation execution
       self.logical_time = 0
@@ -123,6 +123,8 @@ class FuzzTester (Topology):
       # we're simulating all of our own network elements
       log.debug("Starting fuzz loop")
       
+      self.running = True
+      
       while(self.running):
         self.logical_time += 1
         self.trigger_events()
@@ -146,11 +148,11 @@ class FuzzTester (Topology):
     
     def crashed_switches(self):
       """ Return the switches which are currently down """
-      return filter(self.all_switches(), lambda switch : switch.failed)
+      return filter(lambda switch : switch.failed, self.all_switches())
     
-    def up_switches(self):
+    def live_switches(self):
       """ Return the switches which are currently up """
-      return filter(self.all_switches(), lambda switch : not switch.failed)
+      return filter(lambda switch : not switch.failed, self.all_switches())
     
     # ============================================ #
     #      Methods to trigger events               #
@@ -171,42 +173,47 @@ class FuzzTester (Topology):
           # TODO: deliver the message
           pass
         elif self.random.random() < self.drop_rate:
-	  # Drop the message
+          # Drop the message
           # TODO: Don't drop TCP messages... that would just be silly.
           self.dropped_messages.add(msg)
           self.in_transit_messages.remove(msg)
         else:
-	  # Delay the message
+          # Delay the message
           msg.delayed_rounds += 1
     
     def check_crashes(self):
       # Decide whether to crash or restart switches, links and controllers
       def crash_switches():
-        for switch in self.up_switches():
+        crashed = set()
+        for switch in self.live_switches():
           if self.random.random() < self.failure_rate:
             log.info("Crashing switch %s" % str(switch))
             switch.fail()
+            crashed.add(switch)
+        return crashed
             
-      def restart_switches():
-        for switch in self.down_switches():
+      def restart_switches(crashed_this_round):
+        for switch in self.crashed_switches():
+          if switch in crashed_this_round:
+            continue
           if self.random.random() < self.recovery_rate:
             log.info("Rebooting switch %s" % str(switch))
             switch.recover()
 
       def cut_links():
-	pass
+        pass
 
       def repair_links():
         pass
 
       def crash_controllers():
-	pass
+        pass
 
       def restart_controllers():
-	pass
+        pass
             
-      crash_switches()
-      restart_switches()
+      crashed = crash_switches()
+      restart_switches(crashed)
       cut_links()
       repair_links()
       crash_controllers()
