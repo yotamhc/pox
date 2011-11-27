@@ -65,7 +65,7 @@ class NomTrap (EventMixin):
     We overwrite this method so that we are notified when a client
     registers a handler
     """
-    EventMixin.addListener(self, eventType, handler, once, weak, priority, byName)
+    Topology.addListener(self.fuzzer, eventType, handler, once, weak, priority, byName)
     
     if eventType in self._relevant_EventTypes:
       if self._relevant_EventTypes[eventType] is None:

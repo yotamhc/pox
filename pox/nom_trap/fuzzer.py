@@ -242,11 +242,12 @@ class FuzzTester (Topology):
           # TODO: factor out "grab a random element from a hash"
           rand_index = self.random.randint(0, num_relevant_event_types-1)
           eventType = switch._eventMixin_handlers.keys()[rand_index]
-          event = self.event_generator.generate(eventType)
+          event = self.event_generator.generate(eventType, switch)
           handlers = switch._eventMixin_handlers[eventType]
           # TODO: we need a way to distinguish client handler's from other
           # handlers. For now just assume that the first one is the client's
-          handler = handlers.pop()
+          # handlers are tuples: (priority, handler, once, eid)
+          handler = handlers.pop()[1]
           handler(event) 
           
     # TODO: do we need to define more event types? e.g., packet delivered,

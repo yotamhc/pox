@@ -44,16 +44,42 @@ class OpenFlowTopology (EventMixin):
   Listens to various OpenFlow-specific events and uses those to manipulate
   Topology accordingly.
   """
+  
   # Won't boot up OpenFlowTopology until all of these components are loaded
   # into pox.core. Note though that these components won't be loaded
   # proactively; they must be specified on the command line (with the
   # exception of openflow which usally loads automatically)
   _wantComponents = set(['openflow','topology','openflow_discovery'])
 
+  def _resolveComponents (self):
+    if self._wantComponents == None or len(self._wantComponents) == 0:
+      self._wantComponents = None
+      return True
+  
+    got = set()
+    for c in self._wantComponents:
+      if core.hasComponent(c):
+        # This line initializes self.topology, self.openflow, etc. 
+        setattr(self, c, getattr(core, c))
+        self.listenTo(getattr(core, c), prefix=c)
+        got.add(c)
+      else:
+        # This line also initializes self.topology, self.openflow, if
+        # the corresponding objects are not loaded yet into pox.core
+        setattr(self, c, None)
+    for c in got:
+      self._wantComponents.remove(c)
+    if len(self._wantComponents) == 0:
+      self.wantComponents = None
+      log.debug(self.__class__.__name__ + " ready")
+      return True
+    #log.debug(self.__class__.__name__ + " still wants: " + (', '.join(self._wantComponents)))
+    return False
+
   def __init__ (self):
     """ Note that self.topology is initialized in _resolveComponents """
     super(EventMixin, self).__init__()
-    if not core.resolveComponents(self, self._wantComponents):
+    if not self._resolveComponents():
       self.listenTo(core)
   
   def _handle_openflow_discovery_LinkEvent (self, event):
@@ -76,7 +102,11 @@ class OpenFlowTopology (EventMixin):
       sw2.ports[link.port2].entities.remove(sw1)
 
   def _handle_ComponentRegistered (self, event):
-    if core.resolveComponents(self, self._wantComponents):
+    """
+    A component was registered with pox.core. If we were dependent on it, 
+    check again if all of our dependencies are now satisfied so we can boot.
+    """
+    if self._resolveComponents():
       return EventRemove
 
   def _handle_openflow_ConnectionUp (self, event):
@@ -134,6 +164,8 @@ class OpenFlowPort (Port):
     return item in self.entities
 
   def addEntity (self, entity, single = False):
+    # Invariant (not currently enforced?): 
+    #   len(self.entities) <= 2  ?
     if single:
       self.entities = set([entity])
     else:
@@ -141,6 +173,7 @@ class OpenFlowPort (Port):
 
   def __repr__ (self):
     return "<Port #" + str(self.number) + ">"
+
 
 class OpenFlowSwitch (EventMixin, Switch):
   """
@@ -158,17 +191,17 @@ class OpenFlowSwitch (EventMixin, Switch):
   triggering mock events for those listeners.
   """
   _eventMixin_events = set([
-    SwitchJoin,
+    SwitchJoin, # Defined in pox.topology
     SwitchLeave,
 
-    PortStatus,
+    PortStatus, # Defined in libopenflow_01
     FlowRemoved,
     PacketIn,
     BarrierIn,
   ])
   
   def __init__ (self, dpid):
-    super(Switch, self).__init__(dpid)
+    Switch.__init__(self, dpid)
     EventMixin.__init__(self)
     self.dpid = dpid
     self.ports = {}
@@ -187,7 +220,9 @@ class OpenFlowSwitch (EventMixin, Switch):
     if connection is None:
       self._reconnectTimeout = Timer(RECONNECT_TIMEOUT, self._timer_ReconnectTimeout)
     if ofp is not None:
+      # update capabilities
       self.capabilities = ofp.capabilities
+      # update all ports 
       untouched = set(self.ports.keys())
       for p in ofp.ports:
         if p.port_no in self.ports:
@@ -245,6 +280,15 @@ class OpenFlowSwitch (EventMixin, Switch):
 
   def __repr__ (self):
     return "<%s %s>" % (self.__class__.__name__, dpidToStr(self.dpid))
+  
+  def __getattr__( self, name ):
+    """
+    NOTE: for now, we're making OpenflowSwitch a proxy to its underlying
+    connection object. This could be dangerous... so perhaps we should
+    explicitly define the connection operations? Or just force the client
+    to call sw.connection.send() rather than sw.send()
+    """
+    return getattr( self.connection, name )
 
 
 def launch ():
