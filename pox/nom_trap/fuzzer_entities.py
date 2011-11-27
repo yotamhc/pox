@@ -11,8 +11,8 @@ class MockConnection (Connection):
   """
   A mock connection to a switch
   
-  TODO: This is really the wrong layer of abstraction to be mocking out...
-        what we really want is a "Forwarding Engine" abstraction, that models
+  TODO: This is the wrong layer of abstraction to be mocking out...
+        what we really want is a "Forwarding Engine" abstraction that models
         the flow tables of the switch. The client shouldn't have to send any
         messages at all.
   """
@@ -26,7 +26,7 @@ class MockConnection (Connection):
   def fileno (self):
     return -1
 
-  def disconnect (self, hard = True):
+  def disconnect(self, hard = True):
     self.disconnected = True
     
   def reconnect(self):
@@ -36,7 +36,7 @@ class MockConnection (Connection):
     if self.disconnected:
       return
     
-    # TODO: make this do something. Should have a new entity: forwarding engine.
+    # TODO: make this do something. Should have a separate forwarding engine entity
     log.debug("client sending data %s on switch %s" % (str(data), str(self.switch)))
     self.data_sent.append(data)
 

@@ -32,9 +32,9 @@ class FuzzTester (Topology):
     their responses?)
     """
     
-    # When the client registers an event handler, replace the value with
-    # a reference to it, rather than None. Will start when no None values
-    # remain
+    # List of the event handlers we are waiting before starting the fuzzer
+    # loop. To do something special with a handler registration notification,
+    # set the value to a function rather than None
     _required_event_handlers = {
        SwitchJoin : None
     }
@@ -63,11 +63,11 @@ class FuzzTester (Topology):
       
       # events for this round
       self.sorted_events = []
-      self.in_transit_messages = []
-      self.dropped_messages = []
-      self.failed_switches = []
-      self.failed_controllers = []
-      # self.canceled_timeouts = [] ?
+      self.in_transit_messages = set()
+      self.dropped_messages = set()
+      self.failed_switches = set()
+      self.failed_controllers = set()
+      self.cancelled_timeouts = set() # ?
       
       # Statistics to print on exit
       self.packets_sent = 0
@@ -84,12 +84,12 @@ class FuzzTester (Topology):
       # TODO: future feature: allow the user to interactively choose the order
       # events occur for each round, whether to delay, drop packets, fail nodes,
       # etc. 
-      # FailureLvl [
-      #   NOTHING,    // Everything is handled by the random number generator
-      #   CRASH,      // The user only controls node crashes and restarts
-      #   DROP,      // The user also controls message dropping
-      #   DELAY,      // The user also controls message delays
-      #   EVERYTHING    // The user controls everything, including message ordering
+      # self.failureLvl = [
+      #   NOTHING,    # Everything is handled by the random number generator
+      #   CRASH,      # The user only controls node crashes and restarts
+      #   DROP,       # The user also controls message dropping
+      #   DELAY,      # The user also controls message delays
+      #   EVERYTHING  # The user controls everything, including message ordering
       # ]  
       
     def event_handler_registered(self, event_type, handler):
@@ -101,10 +101,10 @@ class FuzzTester (Topology):
       """
       log.debug("event handler registered %s %s" % (str(event_type), str(handler)))
       
-      if self.ready_to_start(event_type, handler):
+      if self._ready_to_start(event_type, handler):
         self.start()
       
-    def ready_to_start(self, event_type, handler):
+    def _ready_to_start(self, event_type, handler):
       if event_type in self._required_event_handlers:
         self._required_event_handlers[event_type] = handler
         
@@ -118,9 +118,9 @@ class FuzzTester (Topology):
       Start the fuzzer loop!
       """
       # TODO: I need to interpose on all client calls to recoco Timeouts or
-      # other block tasks... we're just running in an infinite loop here, and
-      # won't be yielding to recoco. We don't need of_01_Task, since we're 
-      # simulating all of our own network elements
+      # other blocking tasks... we're just running in an infinite loop here, and
+      # won't be yielding to recoco. We don't need the default of_01_Task, since
+      # we're simulating all of our own network elements
       log.debug("Starting fuzz loop")
       
       while(self.running):
@@ -133,6 +133,7 @@ class FuzzTester (Topology):
         
     def stop(self):
       self.running = False
+      print "Fuzzer stopping..."
       print "Total rounds completed: %d" % self.logical_time
       print "Total packets sent: %d" % self.packets_sent
       
@@ -154,27 +155,29 @@ class FuzzTester (Topology):
     # ============================================ #
     #      Methods to trigger events               #
     # ============================================ #
+    def trigger_events(self):
+      self.check_in_transit()
+      self.check_crashes()
+      self.check_timeouts()
+      # TODO: print out the state of the network at each timestep? Take a
+      # verbose flag..
+
     def check_in_transit(self):
       # Decide whether to delay, drop, or deliver packets
       # TODO: interpose on connection objects to grab their messages
-      # TODO: track from switch to switch, not just switch to controller
+      # TODO: track messages from switch to switch, not just switch to controller
       for msg in self.in_transit_messages:
         if self.random.random() > self.delay_rate:
           # TODO: deliver the message
           pass
         elif self.random.random() < self.drop_rate:
-          self.dropped_messages.append(msg)
+	  # Drop the message
+          # TODO: Don't drop TCP messages... that would just be silly.
+          self.dropped_messages.add(msg)
           self.in_transit_messages.remove(msg)
         else:
-            msg.delayed_rounds += 1
-      
-      def drop_packets():
-        # Don't drop TCP messages... that would just be silly.
-        for msg in self.
-      
-      deliver_packets() 
-      drop_packets()
-      
+	  # Delay the message
+          msg.delayed_rounds += 1
     
     def check_crashes(self):
       # Decide whether to crash or restart switches, links and controllers
@@ -186,13 +189,29 @@ class FuzzTester (Topology):
             
       def restart_switches():
         for switch in self.down_switches():
-          if self.random.random() < self.failure_rate:
+          if self.random.random() < self.recovery_rate:
             log.info("Rebooting switch %s" % str(switch))
             switch.recover()
+
+      def cut_links():
+	pass
+
+      def repair_links():
+        pass
+
+      def crash_controllers():
+	pass
+
+      def restart_controllers():
+	pass
             
       crash_switches()
       restart_switches()
-    
+      cut_links()
+      repair_links()
+      crash_controllers()
+      restart_controllers()
+
     def check_timeouts(self):
       # Interpose on timeouts
       pass
@@ -200,37 +219,9 @@ class FuzzTester (Topology):
     def fuzz_traffic(self):
       # randomly generate messages from switches
       pass
-    
-    def trigger_events(self):
-      self.check_in_transit()
-      self.check_crashes()
-      self.check_timeouts()
-      # TODO: print out the state of the network at each timestep?
-    
+        
     # TODO: do we need to define more event types? e.g., packet delivered,
     # controller crashed, etc.
- 
-          
-    # ============================================ #
-    #      Methods to crash or restart nodes       #
-    # ============================================ #
-    def crash_switch(self, dpid):
-      pass
-    
-    def restart_switch(self, dpid):
-      pass
-    
-    def cut_link(self, link):
-      pass
-   
-    def repair_link(self, link):
-      pass
-  
-    def crash_controller(self, id):
-      pass
-     
-    def restart_controller(self, id):
-      pass
          
 if __name__ == "__main__":
   pass
