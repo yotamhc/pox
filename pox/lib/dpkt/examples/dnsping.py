@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import random, socket
-import dpkt
+import pox.lib.dpkt as dpkt
 import ping
 
 class DNSPing(ping.Ping):

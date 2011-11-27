@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
 import dnet
-from dpkt import dhcp
-from dpkt import udp
-from dpkt import ip
-from dpkt import ethernet
+from pox.lib.dpkt import dhcp
+from pox.lib.dpkt import udp
+from pox.lib.dpkt import ip
+from pox.lib.dpkt import ethernet
 
 sysintf = 'eth0'
 hw = dnet.eth(sysintf)

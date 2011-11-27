@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import math, optparse, random, socket, sys, time
-import dpkt
+import pox.lib.dpkt as dpkt
 
 class Ping(object):
     def __init__(self):
