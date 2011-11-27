@@ -17,8 +17,9 @@ log = core.getLogger()
 
 class NomTrap (EventMixin):
   """
-  This is a testing framework for controller applications. It interposes on
-  on pox.topology to inject mock events into controller applications.
+  This is the interposition layer of the pox testing framework
+  It interposes on on pox.topology to inject mock events into
+  controller applications.
   
   We can think of the controller application as a function:
       F(view) => configuration
@@ -37,15 +38,11 @@ class NomTrap (EventMixin):
     
   # we want to be core.topology, so that we can interpose transparently
   _core_name = "topology"
-  
-  def notify_SwitchJoin_registration(self, handler):
-    """ Someone just registered a handler for SwitchJoin """
-    log.debug("SwitchJoin handler registered")
-    self.fuzzer.switchjoin_registration(handler)
-   
-  # The event types we want to be notified of listener registrations for
+    
+  # If you want to do something special with the event handler registation, 
+  # define a method here rather than None
   _relevant_EventTypes = {
-    SwitchJoin : notify_SwitchJoin_registration,
+    SwitchJoin : None,
     SwitchLeave : None,
     HostJoin : None,
     HostLeave : None,
@@ -60,17 +57,22 @@ class NomTrap (EventMixin):
     self._eventMixin_events = self.fuzzer._eventMixin_events
 
   def addListener (self, eventType, handler, once=False, weak=False, priority=None, byName=False):  
+    """ Interpose on addListener to notify our fuzzer when to start """
+    # TODO: pretty sure we're going to need a reference to the client, not
+    # just its handler. Add an extra arg to addListener?
     log.debug("addListener called, handler=%s" % str(handler))
     """
     We overwrite this method so that we are notified when a client
     registers a handler
     """
-    if eventType in self._relevant_EventTypes:
-      # For now, we assume that the client was the one registering the handler...
-      # TODO: add an argument to addListener which is a reference to the registrator?
-      self._relevant_EventTypes[eventType](self, handler)
-      
     EventMixin.addListener(self, eventType, handler, once, weak, priority, byName)
+    
+    if eventType in self._relevant_EventTypes:
+      if self._relevant_EventTypes[eventType] is None:
+        self.fuzzer.event_handler_registered(eventType, handler)
+      else:
+        self._relevant_EventTypes[eventType](eventType, handler)
+      
   
 if __name__ == "__main__":
- pass
+  pass

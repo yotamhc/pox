@@ -82,8 +82,10 @@ class EthAddr (object):
     strings, long integers, etc.
     """
     # Always stores as a 6 character string
-
-    if isinstance(addr, bytes) or isinstance(addr, unicode):
+    if isinstance(addr, int) or isinstance(addr, long):
+      addr = long(addr)
+      self._value = addr
+    elif isinstance(addr, bytes) or isinstance(addr, unicode):
       if len(addr) == 17 or len(addr) == 12 or addr.count(':') == 5:
         # hex
         if len(addr) == 17:
@@ -109,9 +111,7 @@ class EthAddr (object):
       self._value = b'\x00' * 6
     else:
       raise RuntimeError("Expected ethernet address to be a string of 6 raw bytes or some hex")
-    #elif isinstance(addr, int) or isinstance(addr, long):
-    #  addr = long(addr)
-
+    
   def isMulticast (self):
     """
     Returns True if this is a multicast address.

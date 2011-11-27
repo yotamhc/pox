@@ -5,12 +5,11 @@ Date October 2009
 Created by ykk
 """
 import random
-import pox.lib.pylibopenflow.openflow as openflow
 
 class network:
     """Class holding information about OpenFlow network
     """
-    def __init__(self):
+    def __init__(self, connections):
         """Initialize
         """
         ##List of switches
@@ -18,7 +17,7 @@ class network:
         ##Dictionary of links
         self.links = {}
         ##Reference to connections
-        self.connections = openflow.connections()
+        self.connections = connections
 
     def add_switch(self, sw):
         """Add switch to network

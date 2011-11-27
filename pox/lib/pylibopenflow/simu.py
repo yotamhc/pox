@@ -4,7 +4,6 @@ Copyright(C) 2009, Stanford University
 Date November 2009
 Created by ykk
 """
-import pox.lib.pylibopenflow.openflow as openflow
 import pox.lib.pylibopenflow.network as ofnetwork
 import pox.lib.pylibopenflow.msg as msg
 from pox.core import core
@@ -62,7 +61,7 @@ class switch(ofnetwork.switch):
         ##Reference to OpenFlow messages
         self.__messages = messages
         ##Reference to connection
-        self.connection = openflow.tcpsocket(messages, controller, port)
+        self.connection = connection
         self.sock = self.connection.sock
         ##Reference to Parser
         self.parser = None
