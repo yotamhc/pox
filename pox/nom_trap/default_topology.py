@@ -41,7 +41,7 @@ def populate(topology, num_switches=3):
     # Load up ports
     for port_no in range(0, ports_per_switch):
       port = ports[(switch_num*ports_per_switch)+port_no]
-      switches[switch_num].ports[port.port_no] = port
+      switches[switch_num].ports[port.number] = port
   
   for switch in switches:
     topology.addEntity(switch)
