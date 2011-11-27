@@ -7,6 +7,7 @@ from pox.lib.revent.revent import *
 
 from pox.topology.topology import *
 import pox.nom_trap.default_topology as default_topology
+from fuzzer_entities import *
 
 import sys
 import threading
@@ -44,10 +45,11 @@ class FuzzTester (Topology):
       self.running = False
       
       # TODO: make it easier for client to tweak these
-      self.failure_rate = 0.0
-      self.recovery_rate = 0.0
-      self.drop_rate = 0.0
-      self.delay_rate = 0.0
+      self.failure_rate = 0.01
+      self.recovery_rate = 0.01
+      self.drop_rate = 0.01
+      self.delay_rate = 0.01
+      self.of_message_rate = 0.01
       
       # Logical time for the simulation execution
       self.logical_time = 0
@@ -55,16 +57,16 @@ class FuzzTester (Topology):
       # each logical timestep should last?
       
       # TODO: allow the user to specify a topology
-      # This should cause the client to register additional handlers on
-      # switch entities
+      # The next line should cause the client to register additional
+      # handlers on switch entities
       default_topology.populate(self)
       
+      # events for this round
       self.sorted_events = []
       self.in_transit_messages = []
+      self.dropped_messages = []
       self.failed_switches = []
       self.failed_controllers = []
-      self.delated_messages = []
-      self.dropped_messages = []
       # self.canceled_timeouts = [] ?
       
       # Statistics to print on exit
@@ -97,7 +99,6 @@ class FuzzTester (Topology):
       TODO: I'm pretty sure we're going to need a reference to the client
       itself, not just its handler
       """
-      
       log.debug("event handler registered %s %s" % (str(event_type), str(handler)))
       
       if self.ready_to_start(event_type, handler):
@@ -120,48 +121,96 @@ class FuzzTester (Topology):
       # other block tasks... we're just running in an infinite loop here, and
       # won't be yielding to recoco. We don't need of_01_Task, since we're 
       # simulating all of our own network elements
-      
       log.debug("Starting fuzz loop")
       
       while(self.running):
         self.logical_time += 1
         self.trigger_events()
-        break
+        print("Round %d completed." % self.logical_time)
+        answer = raw_input('Continue to next round? [Yn]')
+        if answer != '' and answer.lower() != 'y':
+          self.stop()
         
     def stop(self):
       self.running = False
-      # TODO; print out statistics
+      print "Total rounds completed: %d" % self.logical_time
+      print "Total packets sent: %d" % self.packets_sent
       
+    # ============================================ #
+    #     Bookkeeping methods                      #
+    # ============================================ #
+    def all_switches(self):
+      """ Return all switches currently registered """
+      return self.getEntitiesOfType(MockOpenFlowSwitch)
+    
+    def crashed_switches(self):
+      """ Return the switches which are currently down """
+      return filter(self.all_switches(), lambda switch : switch.failed)
+    
+    def up_switches(self):
+      """ Return the switches which are currently up """
+      return filter(self.all_switches(), lambda switch : not switch.failed)
+    
     # ============================================ #
     #      Methods to trigger events               #
     # ============================================ #
     def check_in_transit(self):
-      # Decide whether to delay, drop packets
-      pass
+      # Decide whether to delay, drop, or deliver packets
+      # TODO: interpose on connection objects to grab their messages
+      # TODO: track from switch to switch, not just switch to controller
+      for msg in self.in_transit_messages:
+        if self.random.random() > self.delay_rate:
+          # TODO: deliver the message
+          pass
+        elif self.random.random() < self.drop_rate:
+          self.dropped_messages.append(msg)
+          self.in_transit_messages.remove(msg)
+        else:
+            msg.delayed_rounds += 1
+      
+      def drop_packets():
+        # Don't drop TCP messages... that would just be silly.
+        for msg in self.
+      
+      deliver_packets() 
+      drop_packets()
+      
     
-    def check_crash(self):
-      # Decide whether to crash, restart switches, controllers
-      pass
+    def check_crashes(self):
+      # Decide whether to crash or restart switches, links and controllers
+      def crash_switches():
+        for switch in self.up_switches():
+          if self.random.random() < self.failure_rate:
+            log.info("Crashing switch %s" % str(switch))
+            switch.fail()
+            
+      def restart_switches():
+        for switch in self.down_switches():
+          if self.random.random() < self.failure_rate:
+            log.info("Rebooting switch %s" % str(switch))
+            switch.recover()
+            
+      crash_switches()
+      restart_switches()
     
     def check_timeouts(self):
       # Interpose on timeouts
       pass
     
+    def fuzz_traffic(self):
+      # randomly generate messages from switches
+      pass
+    
     def trigger_events(self):
       self.check_in_transit()
-      self.check_crash()
+      self.check_crashes()
       self.check_timeouts()
       # TODO: print out the state of the network at each timestep?
     
     # TODO: do we need to define more event types? e.g., packet delivered,
     # controller crashed, etc.
  
-    def send_packet(self, msg):
-      pass
-    
-    def deliver_packet(self, msg):
-      pass
-      
+          
     # ============================================ #
     #      Methods to crash or restart nodes       #
     # ============================================ #
