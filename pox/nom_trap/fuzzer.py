@@ -8,6 +8,7 @@ from pox.lib.revent.revent import *
 from pox.topology.topology import *
 import pox.nom_trap.default_topology as default_topology
 from fuzzer_entities import *
+from event_generator import EventGenerator
 
 import sys
 import threading
@@ -75,6 +76,7 @@ class FuzzTester (Topology):
       # Make execution deterministic to allow the user to easily replay
       self.seed = 0.0
       self.random = random.Random(self.seed)
+      self.event_generator = EventGenerator(self.random)
       
       # TODO: future feature: log all events, and allow user to (interactively)
       # replay the execution
@@ -132,6 +134,9 @@ class FuzzTester (Topology):
         answer = raw_input('Continue to next round? [Yn]')
         if answer != '' and answer.lower() != 'y':
           self.stop()
+          
+        # TODO: print out the state of the network at each timestep? Take a
+        # verbose flag..
         
     def stop(self):
       self.running = False
@@ -161,8 +166,7 @@ class FuzzTester (Topology):
       self.check_in_transit()
       self.check_crashes()
       self.check_timeouts()
-      # TODO: print out the state of the network at each timestep? Take a
-      # verbose flag..
+      self.fuzz_traffic()
 
     def check_in_transit(self):
       # Decide whether to delay, drop, or deliver packets
@@ -226,8 +230,25 @@ class FuzzTester (Topology):
     def fuzz_traffic(self):
       # randomly generate messages from switches
       # TODO: future feature: trace-driven packet generation
-      pass
-        
+      for switch in self.live_switches():
+        if self.random.random() < self.of_message_generation_rate:
+          log.debug("triggering a random event")
+          # trigger a random event handler.
+          # TODO: trigger more than one in a given round?
+          num_relevant_event_types = len(switch._eventMixin_handlers)
+          if num_relevant_event_types == 0:
+            continue
+          log.debug("There were registered event handlers")
+          # TODO: factor out "grab a random element from a hash"
+          rand_index = self.random.randint(0, num_relevant_event_types-1)
+          eventType = switch._eventMixin_handlers.keys()[rand_index]
+          event = self.event_generator.generate(eventType)
+          handlers = switch._eventMixin_handlers[eventType]
+          # TODO: we need a way to distinguish client handler's from other
+          # handlers. For now just assume that the first one is the client's
+          handler = handlers.pop()
+          handler(event) 
+          
     # TODO: do we need to define more event types? e.g., packet delivered,
     # controller crashed, etc.
          
