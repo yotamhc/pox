@@ -225,6 +225,7 @@ class FuzzTester (Topology):
     
     def fuzz_traffic(self):
       # randomly generate messages from switches
+      # TODO: future feature: trace-driven packet generation
       pass
         
     # TODO: do we need to define more event types? e.g., packet delivered,
