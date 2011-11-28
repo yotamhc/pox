@@ -17,6 +17,8 @@ import subprocess
 import socket
 import time
 import random
+import os
+
 
 log = core.getLogger()
 
@@ -32,16 +34,18 @@ class FuzzTester (Topology):
     it will inject intelligently chosen mock events (and observe
     their responses?)
     """
-    
-    # List of the event handlers we are waiting before starting the fuzzer
-    # loop. To do something special with a handler registration notification,
-    # set the value to a function rather than None
-    _required_event_handlers = {
-       SwitchJoin : None
-    }
-    
+        
     def __init__(self):
       Topology.__init__(self)
+      self.listenTo(core)
+      self.core_up = False
+      
+      # List of the event handlers we are waiting before starting the fuzzer
+      # loop. To do something special with a handler registration notification,
+      # set the value to a function rather than None
+      self._required_event_handlers = {
+        SwitchJoin : None,
+      }
      
       self.running = False
       
@@ -94,6 +98,12 @@ class FuzzTester (Topology):
       #   EVERYTHING  # The user controls everything, including message ordering
       # ]  
       
+    def _handle_GoingUpEvent(self, going_up_event):
+      print "going up event!"
+      self.core_up = True
+      if self._ready_to_start():
+        self.start()
+      
     def event_handler_registered(self, event_type, handler):
       """ 
       A client just registered an event handler on us
@@ -103,14 +113,17 @@ class FuzzTester (Topology):
       """
       log.debug("event handler registered %s %s" % (str(event_type), str(handler)))
       
-      if self._ready_to_start(event_type, handler):
-        self.start()
-      
-    def _ready_to_start(self, event_type, handler):
       if event_type in self._required_event_handlers:
         self._required_event_handlers[event_type] = handler
         
+      if self._ready_to_start():
+        self.start()
+      
+    def _ready_to_start(self):
       if None in self._required_event_handlers.values():
+        return False
+      
+      if not self.core_up:
         return False
       
       return True
@@ -143,6 +156,7 @@ class FuzzTester (Topology):
       print "Fuzzer stopping..."
       print "Total rounds completed: %d" % self.logical_time
       print "Total packets sent: %d" % self.packets_sent
+      os.sys.exit()
       
     # ============================================ #
     #     Bookkeeping methods                      #

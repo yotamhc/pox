@@ -55,7 +55,7 @@ class NomTrap (EventMixin):
     self.fuzzer = FuzzTester()
     # alternatively, delegate all missing attributes to self.fuzzer?
     self._eventMixin_events = self.fuzzer._eventMixin_events
-
+ 
   def addListener (self, eventType, handler, once=False, weak=False, priority=None, byName=False):  
     """ Interpose on addListener to notify our fuzzer when to start """
     # TODO: pretty sure we're going to need a reference to the client, not
