@@ -74,8 +74,8 @@ class nom_l2_switch_controller (EventMixin):
     # TODO: what if there are already switches in topology before we boot?
     # This handler won't be triggered for them...
     # Further argument for a `nom_update()` method? 
+    log.debug("SwitchJoin! %s" % (str(join_event)))
     switch = join_event.switch
-    log.debug("SwitchJoin! %s" % (str(switch)))
     # Turn that sucker into a Learning switch!
     # Note that we can externally add attributes to NOM entities easily like so:
     switch.macToPort = {}
