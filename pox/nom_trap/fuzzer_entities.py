@@ -1,10 +1,15 @@
 """
 This module mocks out openflow switches. 
 
-It just occurred to me that we don't really want to mock out network elements...
-Ultimately, our goal is to test the entire stack! So really, we should be using 
-MiniNet to boot open v switches, and then inject randomly generated traffic to the 
-switches themselves. This brings up two questions:
+This is only for simulation, not emulation. For simluation, we run everything
+in the same process, and mock out switch behavior. This way it's super easy
+to track the state of the system at any point in time (total ordering of events).
+
+Eventually, we want to test the entire stack. We're also going to want to
+allow for the possibility of consistency bugs, which will imply separate
+processes. To emulate, we'll want to :
+    - Boot up MiniNet with some open v switches
+    - inject randomly generated traffic to the switches themselves. This brings up two questions:
   - Is it possible to package a MiniNet VM as part of POX? That would
     go against the grain of POX's python-only, pre-packaged everything
     philosophy.
@@ -69,7 +74,7 @@ class MockOpenFlowSwitch (OpenFlowSwitch):
   def __init__ (self, dpid):
     OpenFlowSwitch.__init__(self, dpid)
     # TODO: the self param should really be a reference to pylibopenflow.switch
-    self.connection = MockConnection(self)
+    self._connection = MockConnection(self)
     self.failed = False
     # TODO: set ports?
     
@@ -77,13 +82,13 @@ class MockOpenFlowSwitch (OpenFlowSwitch):
     if self.failed == True:
       log.warn("Switch already failed")
     self.failed = True
-    self.connection.disconnect()
+    self._connection.disconnect()
     
   def recover(self):
     if not self.failed:
       log.warn("Switch already up")
     self.failed = False
-    self.connection.reconnect()
+    self._connection.reconnect()
     
     
 class Message (object):
