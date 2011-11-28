@@ -24,9 +24,8 @@ class EventGenerator (object):
     return self._event_generators[eventType](switch)
        
   def packet_in(self, switch):
-    # randomly choose an in port. TODO: factor choosing a random elt out
-    rand_index = self.random.randint(0,len(switch.ports)-1)
-    in_port = switch.ports[switch.ports.keys()[rand_index]] # .number?
+    # randomly choose an in_port.
+    in_port = self.random.choice(switch.ports.values())
     e = ethernet()
     # TODO: need a better way to create random MAC addresses
     e.src = EthAddr(struct.pack("Q",self.random.randint(1,0xFF))[:6])

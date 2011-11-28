@@ -239,9 +239,7 @@ class FuzzTester (Topology):
           if num_relevant_event_types == 0:
             continue
           log.debug("There were registered event handlers")
-          # TODO: factor out "grab a random element from a hash"
-          rand_index = self.random.randint(0, num_relevant_event_types-1)
-          eventType = switch._eventMixin_handlers.keys()[rand_index]
+          eventType = self.random.choice(switch._eventMixin_handlers.values())
           event = self.event_generator.generate(eventType, switch)
           handlers = switch._eventMixin_handlers[eventType]
           # TODO: we need a way to distinguish client handler's from other
