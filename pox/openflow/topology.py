@@ -30,7 +30,6 @@ from pox.openflow.discovery import *
 from pox.lib.util import dpidToStr
 from pox.lib.addresses import *
 
-
 # After a switch disconnects, it has this many seconds to reconnect in
 # order to reactivate the same OpenFlowSwitch object.  After this, if
 # it reconnects, it will be a new switch object.
@@ -206,14 +205,14 @@ class OpenFlowSwitch (EventMixin, Switch):
     self.dpid = dpid
     self.ports = {}
     self.capabilities = 0
-    self.connection = None
+    self._connection = None
     self._listeners = []
     self._reconnectTimeout = None # Timer for reconnection
 
   def _setConnection (self, connection, ofp=None):
-    if self.connection: self.connection.removeListeners(self._listeners)
+    if self._connection: self._connection.removeListeners(self._listeners)
     self._listeners = []
-    self.connection = connection
+    self._connection = connection
     if self._reconnectTimeout is not None:
       self._reconnectTimeout.cancel()
       self._reconnectTimeout = None
@@ -288,7 +287,7 @@ class OpenFlowSwitch (EventMixin, Switch):
     explicitly define the connection operations? Or just force the client
     to call sw.connection.send() rather than sw.send()
     """
-    return getattr( self.connection, name )
+    return getattr( self._connection, name )
 
 
 def launch ():
