@@ -27,13 +27,15 @@ def populate(topology, num_switches=3):
   ports_per_switch = num_switches - 1
   total_ports = num_switches * ports_per_switch
   # Ox000000000000 is reserved, so start at Ox000000000001
-  addr = 0x000000000001
+  addr = 1
   for port_no in range(0, total_ports):
     ofp_port = ofp_phy_port()
     ofp_port.port_no = port_no
-    ofp_port.hw_addr = EthAddr(addr)
+    # repeat the addr value in each of the 6 bytes
+    raw_addr = struct.pack("Q", addr)[:6] 
+    ofp_port.hw_addr = EthAddr(raw_addr)
     ports.append(OpenFlowPort(ofp_port))
-    addr += 0x000000000001
+    addr += 1
 
   switches = []
   for switch_num in range(0, num_switches):

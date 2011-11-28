@@ -247,7 +247,7 @@ class FuzzTester (Topology):
           # TODO: we need a way to distinguish client handler's from other
           # handlers. For now just assume that the first one is the client's
           # handlers are tuples: (priority, handler, once, eid)
-          handler = handlers.pop()[1]
+          handler = handlers[0][1]
           handler(event) 
           
     # TODO: do we need to define more event types? e.g., packet delivered,

@@ -128,4 +128,5 @@ class ethernet(packet_base):
       dst = dst.toRaw()
     if type(src) is EthAddr:
       src = src.toRaw()
+      
     return struct.pack('!6s6sH', dst, src, self.type)

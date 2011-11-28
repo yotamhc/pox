@@ -1,7 +1,9 @@
 
 from pox.openflow import PacketIn
 from pox.openflow.libopenflow_01 import ofp_packet_in
-import pox.lib.packet.ethernet as ethernet
+from pox.lib.packet.ethernet import *
+from pox.lib.packet.ipv4 import *
+from pox.lib.packet.icmp import *
 
 class EventGenerator (object):
   """
@@ -22,16 +24,29 @@ class EventGenerator (object):
     return self._event_generators[eventType](switch)
        
   def packet_in(self, switch):
-    # TODO: generate the data to put in the packet in message. Need a notion
-    # of valid ethernet addresses within the network 
-    data = ethernet()
     # randomly choose an in port. TODO: factor choosing a random elt out
     rand_index = self.random.randint(0,len(switch.ports)-1)
-    in_port = switch.ports[switch.ports.keys()[rand_index]]
-    buffer_id = -1
+    in_port = switch.ports[switch.ports.keys()[rand_index]] # .number?
+    e = ethernet()
+    # TODO: need a better way to create random MAC addresses
+    e.src = EthAddr(struct.pack("Q",self.random.randint(1,0xFF))[:6])
+    e.dst = in_port.hwAddr
+    e.type = ethernet.IP_TYPE
+    ipp = ipv4()
+    ipp.protocol = ipv4.ICMP_PROTOCOL
+    ipp.srcip = IPAddr(self.random.randint(0,0xFFFFFFFF))
+    ipp.dstip = IPAddr(self.random.randint(0,0xFFFFFFFF))
+    ping = icmp()
+    ping.type = TYPE_ECHO_REQUEST
+    ping.payload = "PingPing" * 6
+    ipp.payload = ping
+    e.payload = ipp
+    
+    buffer_id = self.random.randint(0,0xFFFFFFFF)
     reason = None
-    pkt = ofp_packet_in(data = data,
-                        in_port = in_port,
+    
+    pkt = ofp_packet_in(data = e.pack(),
+                        in_port = in_port.number,
                         buffer_id = buffer_id,
                         reason = reason)
     
