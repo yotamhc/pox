@@ -241,6 +241,10 @@ def _opt_verbose (v):
 def _opt_debug (v):
   global debug
   debug = str(v).lower() == "true"
+  if debug:
+    # debug implies no openflow 
+    _opt_no_openflow(True)
+    _opt_no_cli(True)
 
 def process_options ():
   # TODO: define this list somewhere else. Or use an option-parsing library.
