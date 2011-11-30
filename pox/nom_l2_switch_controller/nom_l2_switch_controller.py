@@ -45,8 +45,6 @@ from pox.lib.revent.revent import *
 log = core.getLogger()
 
 class nom_l2_switch_controller (EventMixin):
-  # TODO: build this "want component" mechanism into pox itself. It seems to
-  # be duplicated in a few places (e.g., pox.openflow.topology)
   _wantComponents = set(['topology'])
 
   def __init__ (self):
@@ -71,9 +69,6 @@ class nom_l2_switch_controller (EventMixin):
       return EventRemove
 
   def _handle_topology_SwitchJoin(self, join_event):
-    # TODO: what if there are already switches in topology before we boot?
-    # This handler won't be triggered for them...
-    # Further argument for a `nom_update()` method? 
     log.debug("SwitchJoin! %s" % (str(join_event)))
     switch = join_event.switch
     # Turn that sucker into a Learning switch!

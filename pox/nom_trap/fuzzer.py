@@ -19,7 +19,6 @@ import time
 import random
 import os
 
-
 log = core.getLogger()
 
 class FuzzTester (Topology):
@@ -34,7 +33,6 @@ class FuzzTester (Topology):
     it will inject intelligently chosen mock events (and observe
     their responses?)
     """
-        
     def __init__(self):
       Topology.__init__(self)
       self.listenTo(core)
