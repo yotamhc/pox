@@ -39,8 +39,7 @@ class FuzzTester (Topology):
       self.core_up = False
       
       # List of the event handlers we are waiting before starting the fuzzer
-      # loop. To do something special with a handler registration notification,
-      # set the value to a function rather than None
+      # loop. Values of the dict will be set to the event handler.
       self._required_event_handlers = {
         SwitchJoin : None,
       }
@@ -54,7 +53,7 @@ class FuzzTester (Topology):
       self.delay_rate = 0.5
       self.of_message_generation_rate = 0.5
       
-      # Logical time for the simulation execution
+      # Logical time (round #) for the simulation execution
       self.logical_time = 0
       # TODO: take a timestep parameter for how long
       # each logical timestep should last?
@@ -88,7 +87,7 @@ class FuzzTester (Topology):
       # TODO: future feature: allow the user to interactively choose the order
       # events occur for each round, whether to delay, drop packets, fail nodes,
       # etc. 
-      # self.failureLvl = [
+      # self.failure_lvl = [
       #   NOTHING,    # Everything is handled by the random number generator
       #   CRASH,      # The user only controls node crashes and restarts
       #   DROP,       # The user also controls message dropping
@@ -185,17 +184,17 @@ class FuzzTester (Topology):
       # TODO: interpose on connection objects to grab their messages
       # TODO: track messages from switch to switch, not just switch to controller
       for msg in self.in_transit_messages:
-        if self.random.random() > self.delay_rate:
-          # TODO: deliver the message
-          pass
+        if self.random.random() < self.delay_rate:
+          # Delay the message
+          msg.delayed_rounds += 1
         elif self.random.random() < self.drop_rate:
           # Drop the message
           # TODO: Don't drop TCP messages... that would just be silly.
           self.dropped_messages.add(msg)
           self.in_transit_messages.remove(msg)
         else:
-          # Delay the message
-          msg.delayed_rounds += 1
+          # TODO: deliver the message
+          pass
     
     def check_crashes(self):
       # Decide whether to crash or restart switches, links and controllers
@@ -251,17 +250,18 @@ class FuzzTester (Topology):
           if num_relevant_event_types == 0:
             continue
           log.debug("There were registered event handlers")
-          eventType = self.random.choice(switch._eventMixin_handlers.keys())
-          event = self.event_generator.generate(eventType, switch)
-          handlers = switch._eventMixin_handlers[eventType]
+          event_type = self.random.choice(switch._eventMixin_handlers.keys())
+          event = self.event_generator.generate(event_type, switch)
+          handlers = switch._eventMixin_handlers[event_type]
           # TODO: we need a way to distinguish client handler's from other
-          # handlers. For now just assume that the first one is the client's
+          # handlers. For now just assume that the first one is the client's.
           # handlers are tuples: (priority, handler, once, eid)
           handler = handlers[0][1]
           handler(event) 
           
     # TODO: do we need to define more event types? e.g., packet delivered,
-    # controller crashed, etc.
+    # controller crashed, etc. An alternative might be to just generate
+    # sensible traffic, and let the switch raise its own events.
          
 if __name__ == "__main__":
   pass

@@ -49,4 +49,7 @@ class EventGenerator (object):
                         buffer_id = buffer_id,
                         reason = reason)
     
+    # TODO: rather than returning an Event, instead call
+    # switch.send(pkt), so that this is an end-to-end test (more valuable,
+    # even if the switch is mocked out.)
     return PacketIn(switch, pkt)
