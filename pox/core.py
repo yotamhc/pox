@@ -106,7 +106,7 @@ def getLogger (name=None, moreFrames=0):
 
 log = (lambda : getLogger())()
 
-from pox.lib.revent.revent import *
+from pox.lib.revent import *
 
 class GoingUpEvent (Event):
   """ Fired when system is going up. """
@@ -131,7 +131,7 @@ class ComponentRegistered (Event):
     self.name = name
     self.component = component
 
-import pox.lib.recoco.recoco as recoco
+import pox.lib.recoco as recoco
 
 class POXCore (EventMixin):
   """

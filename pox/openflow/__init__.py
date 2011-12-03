@@ -36,7 +36,7 @@ care of this for you and are only fired when all data is available.
 NOTE: this module is automatically loaded by pox.py
 """
 
-from pox.lib.revent.revent import *
+from pox.lib.revent import *
 import libopenflow_01 as of
 from pox.lib.packet.ethernet import ethernet
 from pox.core import core
@@ -89,7 +89,7 @@ class FlowRemoved (Event):
   idleTimeout (bool) - True if expired because of idleness
   hardTimeout (bool) - True if expired because of hard timeout
   timeout (bool) - True if either of the above is true
-  deleted (bool) - True if deleted explictly
+  deleted (bool) - True if deleted explicitly
   """
   def __init__ (self, connection, ofp):
     Event.__init__(self)

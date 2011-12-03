@@ -210,6 +210,7 @@ class OpenFlowSwitch (EventMixin, Switch):
     self._reconnectTimeout = None # Timer for reconnection
 
   def _setConnection (self, connection, ofp=None):
+    ''' ofp - a FeaturesReply message '''
     if self._connection: self._connection.removeListeners(self._listeners)
     self._listeners = []
     self._connection = connection
