@@ -21,7 +21,7 @@ from pox.nom_trap.fuzzer_entities import *
 from pox.openflow.libopenflow_01 import ofp_phy_port
 
 def populate(topology, num_switches=3):
-  # TODO: Do we need to simulate a port to the controller?
+  # TODO: Do we need to simulate (designate) a port to the controller?
   ports = []
   # Every switch has a link to every other switch, for N*(N-1) total ports
   ports_per_switch = num_switches - 1
@@ -34,17 +34,14 @@ def populate(topology, num_switches=3):
     # repeat the addr value in each of the 6 bytes
     raw_addr = struct.pack("Q", addr)[:6] 
     ofp_port.hw_addr = EthAddr(raw_addr)
-    ports.append(OpenFlowPort(ofp_port))
+    ports.append(ofp_port)
     addr += 1
 
   switches = []
   for switch_num in range(0, num_switches):
-    switches.append(MockOpenFlowSwitch(switch_num))
-    # Load up ports
-    for port_no in range(0, ports_per_switch):
-      port = ports[(switch_num*ports_per_switch)+port_no]
-      switches[switch_num].ports[port.number] = port
-      # TODO: set switch.switch_impl.ports too!
-  
+    first_port_index = switch_num*ports_per_switch
+    ports_for_switch = ports[first_port_index : first_port_index+ports_per_switch]
+    switches.append(MockOpenFlowSwitch(switch_num, ports_for_switch))
+      
   for switch in switches:
     topology.addEntity(switch)

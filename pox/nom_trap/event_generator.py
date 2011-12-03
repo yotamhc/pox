@@ -25,6 +25,8 @@ class EventGenerator (object):
        
   def packet_in(self, switch):
     # randomly choose an in_port.
+    if len(switch.ports) == 0:
+      raise RuntimeError("No Ports Registered on switch! %s" % str(switch)) # TODO:
     in_port = self.random.choice(switch.ports.values())
     e = ethernet()
     # TODO: need a better way to create random MAC addresses

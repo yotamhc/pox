@@ -59,14 +59,16 @@ class MockOpenFlowSwitch (OpenFlowSwitch):
   NOTE: /not/ a mock switch implementation, only a mock NOM entity.
         For the mock switch implementation we use pox.openflow.switch_impl
   """
-  def __init__ (self, dpid):
+  def __init__ (self, dpid, ofp_phy_ports):
     OpenFlowSwitch.__init__(self, dpid)
     self.failed = False
-    # Instantiate the Switch Implementation here
-    self.switch_impl = SwitchImpl(dpid, MockSocket(self), ports=[])
-    self.connect()
+    # Instantiate the Switch Implementation here. We don't use self.switch_impl
+    # to communicate directly with the switch, rather, we go through a Connection
+    # object as in the normal OpenFlowSwitch implementation.
+    self.switch_impl = SwitchImpl(dpid, MockSocket(self), ports=ofp_phy_ports)
+    self.connect(self.switch_impl)
     
-  def connect(self):
+  def connect(self, switch_impl):
     # Note that OpenFlowSwitch._setConnection won't be called externally,
     # (at least in simulation mode), since pox.core isn't raising any
     # ConnectionUp events. To make sure that self.capabilities et al are 
@@ -76,7 +78,7 @@ class MockOpenFlowSwitch (OpenFlowSwitch):
     # Connection will send a features request. Upon receiving the features
     # request, we call OpenFlowSwitch._setConnection to set
     # self.capabilities et al as usual.
-    connection = Connection(MockSocket(self.switch_impl))
+    connection = Connection(MockSocket(switch_impl))
     # Since the socket transfers occur immediately, it should be the case
     # that the handshake has already completed by this point:
     #     self                                       switch
@@ -100,7 +102,7 @@ class MockOpenFlowSwitch (OpenFlowSwitch):
     #         issues in POX, -requires a lot of state)
     #
     # For now, we'll go with option i. 
-    fabricated_features_msg = self.switch_impl._generate_features_message()
+    fabricated_features_msg = switch_impl._generate_features_message()
     self._setConnection(connection, fabricated_features_msg)
     
   def fail(self):
@@ -113,7 +115,7 @@ class MockOpenFlowSwitch (OpenFlowSwitch):
     if not self.failed:
       log.warn("Switch already up")
     self.failed = False
-    self.connect()
+    self.connect(self.switch_impl)
     
 class Link():
   """ Punt on Murphy's graph-library for the NOM """
