@@ -96,7 +96,7 @@ class FuzzTester (Topology):
       # ]  
       
     def _handle_GoingUpEvent(self, going_up_event):
-      print "going up event!"
+      log.debug("going up event!")
       self.core_up = True
       if self._ready_to_start():
         self.start()
