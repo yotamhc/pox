@@ -28,17 +28,35 @@ log = core.getLogger()
 
 class MockSocket(object):
   """ Send bytes directly from object to object, rather than opening a real socket """
-  def __init__(self, receiver):
-    self.receiver = receiver
-    self.read_buffer = "" # Single element queue
+  def __init__(self, receiver_connection=None):
+    self.receiver_connection = receiver_connection
+    # Single element queue
+    self.read_buffer = "" 
+    # In case the user tries to send() before receiver_connection is set. This
+    # is a bit of a hack around for a mutual dependency between sender and receiver
+    # sockets when trying to initialize new connections.
+    self.send_queue = []  
+    
+  def set_receiver_connection(self, receiver_connection):
+    self.receiver_connection = receiver_connection
+    for unsent_msg in self.send_queue:
+      self.send(unsent_msg)
+      
+    self.send_queue = []
     
   def send(self, msg):
+    msg_len = len(msg)
     # TODO: let fuzzer interpose on this transfer, to delay or drop packets
+    if self.receiver_connection is None:
+      # receiver_connection hasn't been set yet
+      self.send_queue.append(msg) 
+      return msg_len # Fake it -- pretend we sent the message already
+      
     # Push the bits
-    self.receiver.connection.sock.read_buffer = msg
-    # Cause them to read the message
-    self.receiver.connection.read()
-    return len(msg)
+    self.receiver_connection.sock.read_buffer = msg
+    # Cause them to read the bits
+    self.receiver_connection.read()
+    return msg_len
     
   def recv(self, len):
     msg = self.read_buffer
@@ -53,7 +71,7 @@ class MockSocket(object):
   
   def fileno(self):
     return -1
-
+  
 class MockOpenFlowSwitch (OpenFlowSwitch):
   """
   NOTE: /not/ a mock switch implementation, only a mock NOM entity.
@@ -65,7 +83,7 @@ class MockOpenFlowSwitch (OpenFlowSwitch):
     # Instantiate the Switch Implementation here. We don't use self.switch_impl
     # to communicate directly with the switch, rather, we go through a Connection
     # object as in the normal OpenFlowSwitch implementation.
-    self.switch_impl = SwitchImpl(dpid, MockSocket(self), ports=ofp_phy_ports)
+    self.switch_impl = SwitchImpl(dpid, MockSocket(), ports=ofp_phy_ports)
     self.connect(self.switch_impl)
     
   def connect(self, switch_impl):
@@ -73,37 +91,28 @@ class MockOpenFlowSwitch (OpenFlowSwitch):
     # (at least in simulation mode), since pox.core isn't raising any
     # ConnectionUp events. To make sure that self.capabilities et al are 
     # set properly, instead instantiate our own Connection object here.
-    # Instantiating a Connection object will case a ofp_hello message to 
+    # Instantiating a Connection object will cause a ofp_hello message to 
     # be sent to the MockSwitchImpl. When the MockSwitchImpl replies, the
     # Connection will send a features request. Upon receiving the features
     # request, we call OpenFlowSwitch._setConnection to set
     # self.capabilities et al as usual.
-    connection = Connection(MockSocket(switch_impl))
-    # Since the socket transfers occur immediately, it should be the case
-    # that the handshake has already completed by this point:
-    #     self                                       switch
-    #                   -> hello
-    #                   <- hello
-    #                   -> feature request
-    #                   <- feature reply
-    #                   -> barrier request
-    #                   <- barrier in
-    # 
-    # There is a problem with this... namely, Connection will already have raised
-    # the ConnectionUp event with the corresponding feature reply message.
-    # Essentially, the problem is that before we have a change to register an event
-    # handler, the event will already have been triggered. I can think of a few potential
-    # solutions to this issue:
-    #   i.    Fabricate a feature_reply (+easy to do since we have a reference to switch_impl)
-    #   ii.   Add a random timeout to MockSocket delivery (+more realistic, -concurrency issues)
-    #   iii.  Add an "predefined event handler list" argument to OpenFlowSwitch.__init__ (-awkward)
-    #   iv.   Add a primitive to EventMixin to ensure that all previously triggered events are executed
-    #         for newly registered event handlers (+may solve other event handler registration ordering
-    #         issues in POX, -requires a lot of state)
-    #
-    # For now, we'll go with option i. 
-    fabricated_features_msg = switch_impl._generate_features_message()
-    self._setConnection(connection, fabricated_features_msg)
+    
+    # In case we are re-connecting with the switch, double check 
+    # that switch_impl.socket.receiver_connection is None
+    switch_impl._connection.sock.receiver_connection = None
+    # This will initiate the handshake
+    connection = Connection(MockSocket(switch_impl._connection))
+    # Since switch_impl.socket.receiver_connection hasn't been set, 
+    # switch_impl will not immediately reply to the OFP_HELLO. This gives us
+    # the opportunity to register a ConnectionUp handler before the handshake
+    # is complete. 
+    connection.addListener(ConnectionUp, self._handle_ConnectionUp)
+    # Now set switch_impl.socket.receiver_connection to us
+    switch_impl._connection.sock.set_receiver_connection(connection)
+    # Now the handshake should complete (instantaneously)
+
+  def _handle_ConnectionUp(self, event):    
+    self._setConnection(event.connection, event.ofp) 
     
   def fail(self):
     if self.failed:
