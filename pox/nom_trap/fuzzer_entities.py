@@ -118,6 +118,8 @@ class MockOpenFlowSwitch (OpenFlowSwitch):
     if self.failed:
       log.warn("Switch already failed")
     self.failed = True
+    # TODO: depending on the type of failure, a real switch failure
+    # might not lead to an immediate disconnect
     self._connection.disconnect()
     
   def recover(self):

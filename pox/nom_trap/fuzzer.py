@@ -190,6 +190,10 @@ class FuzzTester (Topology):
       # Decide whether to delay, drop, or deliver packets
       # TODO: interpose on connection objects to grab their messages
       # TODO: track messages from switch to switch, not just switch to controller
+      # REVIEW: are these (a) /OF control plane messages/ or (b) packets/? 
+      # if (b) name accordingly
+      # if (a) AFAIK, OF control plane should never be dropped, so not sure if the functionality is needed here.
+      # This the delaying models switch specific queuing, it should maybe be implemented by the switch?
       for msg in self.in_transit_messages:
         if self.random.random() < self.delay_rate:
           # Delay the message
