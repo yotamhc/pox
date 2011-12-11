@@ -47,9 +47,7 @@ class FuzzTester (Topology):
       
       # List of the event handlers we are waiting before starting the fuzzer
       # loop. Values of the dict will be set to the event handler.
-      self._required_event_handlers = {
-        SwitchJoin : None,
-      }
+      self._required_event_handlers = {}
      
       self.running = False
       
@@ -259,6 +257,7 @@ class FuzzTester (Topology):
           # TODO: trigger more than one in a given round?
           num_relevant_event_types = len(switch._eventMixin_handlers)
           if num_relevant_event_types == 0:
+            log.debug("No registered event handlers... continuing...")
             continue
           log.debug("There were registered event handlers")
           event_type = self.random.choice(switch._eventMixin_handlers.keys())
