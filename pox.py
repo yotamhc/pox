@@ -35,9 +35,8 @@ exec python -O "$0" "$@"
 '''
 
 from pox.core import core
-import pox.openflow.openflow
-import pox.openflow.of_01
-import pox.nom_trap
+import pox.openflow as of
+import pox.nom_trap as nom_trap
 
 # Turn on extra info for event exceptions
 import pox.lib.revent as revent
@@ -266,7 +265,7 @@ def pre_startup ():
   process_options()
 
   if enable_openflow:
-    pox.openflow.openflow.launch() # Always launch OpenFlow
+    of.launch() # Always launch OpenFlow
 
   return True
 
@@ -277,10 +276,10 @@ def post_startup ():
   #core.register("switch", pox.dumb_l3_switch.dumb_l3_switch.dumb_l3_switch())
 
   if enable_openflow:
-    pox.openflow.of_01.launch() # Always launch of_01
+    of.of_01.launch() # Always launch of_01
 
   if debug:
-    pox.nom_trap.launch()
+    nom_trap.launch()
 
 def _monkeypatch_console ():
   """
