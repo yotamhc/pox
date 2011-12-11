@@ -281,6 +281,8 @@ class POXCore (EventMixin):
     
     sink - the component waiting on dependencies
     components - a list of dependent component names
+    
+    Returns whether all of the desired components are registered.
     """
     if components == None or len(components) == 0:
       return True
