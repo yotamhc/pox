@@ -53,8 +53,6 @@ class NomTrap (EventMixin):
   def __init__(self):
     # We wait for the client to register themselves with us
     self.fuzzer = FuzzTester()
-    # alternatively, delegate all missing attributes to self.fuzzer?
-    self._eventMixin_events = self.fuzzer._eventMixin_events
  
   def addListener (self, eventType, handler, once=False, weak=False, priority=None, byName=False):  
     """ Interpose on addListener to notify our fuzzer when to start """
@@ -72,7 +70,12 @@ class NomTrap (EventMixin):
         self.fuzzer.event_handler_registered(eventType, handler)
       else:
         self._relevant_EventTypes[eventType](eventType, handler)
+        
+  def __getattr__( self, name ):
+    """
+    Delegate unknown attributes to fuzzer (we just interpose)
+    """
+    return getattr( self.fuzzer, name )
       
-  
 if __name__ == "__main__":
   pass
