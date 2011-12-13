@@ -46,8 +46,6 @@ from pox.lib.revent import *
 from pox.core import core
 from pox.lib.addresses import *
 
-import inspect
-
 log = core.getLogger()
 
 class EntityEvent (Event):
@@ -92,7 +90,7 @@ class Entity (object):
   def __init__ (self):
     Entity.ID += 1
     self.id = Entity.ID
-    
+
 class Host (Entity):
   def __init__(self):
     Entity.__init__(self)
@@ -133,10 +131,7 @@ class Topology (EventMixin):
 
   def __init__ (self):
     EventMixin.__init__(self)
-    # Entity id -> Entity
     self.entities = {}
-    # Entity class -> [wrapper class 1, wrapper class 2, ...]
-    self.registered_wrapper_types = {}
     
     # If a client registers a handler for these events after they have already
     # occurred, we promise to re-issue them to the newly joined client.
@@ -163,28 +158,21 @@ class Topology (EventMixin):
 
   def addEntity (self, entity):
     """ Will raise an exception if entity.id is already in the NOM """
-    for entity_type in self.registered_wrapper_types: 
-      if issubclass(type(entity), entity_type):
-        self._instantiate_wrappers_for_entity(entity)
-        log.debug("Instantiating wrappers for %s" % str(entity))
-        break # needed?
-              
-    if(entity.id in self.entities):
-      raise "Entity id %d already in registered in topology" % entity.id
+    assert entity.id not in self.entities
     self.entities[entity.id] = entity
     log.info(str(entity) + " joined")
     if isinstance(entity, Switch):
       self.raiseEvent(SwitchJoin, entity)
     elif isinstance(entity, Host):
       self.raiseEvent(HostJoin, entity)
-    elif isinstance(entity, Entity):
+    else:
       self.raiseEvent(EntityJoin, entity)
 
   def getEntitiesOfType (self, t=Entity, subtypes=True):
     if subtypes is False:
-      return filter(lambda entity: type(entity) is t, self.entities.values())
+      return (x for x in self.entities.itervalues() if type(x) is t)
     else:
-      return filter(lambda entity: isinstance(entity, t), self.entities.values())
+      return (x for x in self.entities.itervalues() if isinstance(x, t))
 
   def getSwitchWithConnection (self, connection):
     """
@@ -211,51 +199,6 @@ class Topology (EventMixin):
     """ Trigger the SwitchJoin handler for all pre-existing switches """
     for switch in self.getEntitiesOfType(Switch, True):
       handler(SwitchJoin(switch))
-      
-  def _instantiate_wrappers_for_entity(self, entity, entity_type):
-    for wrapper_class in self.registered_wrapper_types[entity_type]:
-      wrapper = wrapper_class(entity)  
-      # temporary hack: give the wrapper a new id, and store it in the NOM 
-      # just like a normal entity. 
-      # TODO: when the application wants to walk the NOM, they should only
-      # see their registered wrappers, not the underlying entities. Need to
-      # fix getEntititesByType et al. to be cognizant of wrappers.
-      Entity.ID += 1
-      wrapper.id = Entity.ID
-      self.addEntity(wrapper) # should only recurse one level
-    
-  def registerWrapper(self, topology_entity, wrapper_entity):
-    """
-    Interface to user applications.
-    
-    Allows applications to tell the platform (us) how to instantiate
-    application-specific state. Their state must be stored in the NOM
-    if they are to be stateless. Because we are in charge of managing the NOM, 
-    we need to know how and when to instantiate their user-defined NOM entities.
-    
-    Currently we implement this functionality through "NOM-wrappers". The user provides  
-    two arguments:
-    
-    - topology_entity: a NOM entity defined in this module, e.g. Switch
-    - wrapper_entity: a user-defined class. Whenever a new topology_entity is instantiated,
-                      we promise to instantiate a new wrapper_entity, passing it a reference
-                      to the topology_entity. The wrapper_entity is then managed by us.
-    """
-    if type(topology_entity) != type:
-      raise "topology_entity must be a type class. Was given %s" % topology_entity
-    if type(wrapper_entity) != type:
-      raise "wrapper_entity must be a type class. Was given %s" % wrapper_entity
-    if not issubclass(topology_entity, Entity):
-      raise "topology_entity must be a subclass of Entity. Was given %s" % topology_entity
-    
-    if topology_entity not in self.registered_wrapper_types:
-      self.registered_wrapper_types[topology_entity] = set() # TODO: does python have default-valued hashes?
-      
-    self.registered_wrapper_types[topology_entity].add(wrapper_entity)
-    
-    # Make sure to instantiate wrappers for all previously added entities
-    for entity in self.getEntitiesOfType(topology_entity, True):
-      self._instantiate_wrappers_for_entity(entity, topology_entity)
     
   def __str__(self):
     # TODO: display me graphically
