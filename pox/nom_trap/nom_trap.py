@@ -53,6 +53,10 @@ class NomTrap (EventMixin):
   def __init__(self):
     # We wait for the client to register themselves with us
     self.fuzzer = FuzzTester()
+    # Need to tell clients what kind of events we (fuzzer) raise
+    # Normally we wouldn't have to define this (__getattr__ should do it for us),
+    # but EventMixin inheritance overrides it.
+    self._eventMixin_events = self.fuzzer._eventMixin_events
  
   def addListener (self, eventType, handler, once=False, weak=False, priority=None, byName=False):  
     """ Interpose on addListener to notify our fuzzer when to start """

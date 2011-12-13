@@ -24,7 +24,7 @@ It converts NOM switch entities into LearningSwitches.
 from pox.core import core
 import pox.openflow.libopenflow_01 as of
 from pox.openflow import PacketIn
-from pox.topology.topology import Switch
+from pox.topology.topology import Switch, Entity
 from pox.lib.revent import *
 
 log = core.getLogger()
@@ -45,7 +45,7 @@ log = core.getLogger()
 #   ii.   Behavior (i.e. event handlers, such as def _handle_PacketIn() below)
 #
 # This is an example of a user-defined NOM entity.
-class LearningSwitch (EventMixin):
+class LearningSwitch (EventMixin, Entity):
   """
   The learning switch "brain" associated with a single OpenFlow switch.
 
@@ -82,6 +82,10 @@ class LearningSwitch (EventMixin):
     
     switch - the NOM switch entity to wrap
     """
+    # TODO: don't force user to inherit from Entity. We need this for Entity.ID.
+    # The long-term solution would be to create a second NOM layer for user-defined
+    # entities.
+    Entity.__init__(self) 
     self.switch = switch
 
     # We define our own state
@@ -146,16 +150,11 @@ class nom_l2_switch_controller (EventMixin):
   def _handle_ComponentRegistered (self, event):
     """ Checks whether the newly registered component is one of our dependencies """
     if core.resolveComponents(self, self._wantComponents):
-      self._registerWrapper()
+      # Note that core.resolveComponents registers our event handlers with the dependencies
       return EventRemove
     
-  def _registerWrapper(self):
-    """
-    Tell the platform how to instantiate DumbSwitch NOM entities
+  def _handle_topology_SwitchJoin(self, switch):
+    """ Convert switches into Learning Switches """
+    log.debug("Switch Join! %s " % switch)
+    core.components['topology'].addEntity(LearningSwitch(switch))
     
-    pre: pox.topology is registered with the pox.core 
-    """
-    topology = core.components['topology']
-    # This says: whenever a Switch object is instantiated in the NOM, wrap it with
-    # a LearningSwitch object. 
-    topology.registerWrapper(Switch, LearningSwitch) 
