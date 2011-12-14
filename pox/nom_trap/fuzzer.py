@@ -259,8 +259,8 @@ class FuzzTester (Topology):
           # TODO: trigger more than one in a given round?
           num_relevant_event_types = len(switch._eventMixin_handlers)
           if num_relevant_event_types == 0:
+            log.debug("No registered event handlers for switch %s found" % str(switch))
             continue
-          log.debug("There were registered event handlers")
           event_type = self.random.choice(switch._eventMixin_handlers.keys())
           event = self.event_generator.generate(event_type, switch)
           handlers = switch._eventMixin_handlers[event_type]

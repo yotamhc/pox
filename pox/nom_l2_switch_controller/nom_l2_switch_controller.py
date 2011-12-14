@@ -153,8 +153,8 @@ class nom_l2_switch_controller (EventMixin):
       # Note that core.resolveComponents registers our event handlers with the dependencies
       return EventRemove
     
-  def _handle_topology_SwitchJoin(self, switch):
+  def _handle_topology_SwitchJoin(self, switchjoin_event):
     """ Convert switches into Learning Switches """
-    log.debug("Switch Join! %s " % switch)
-    core.components['topology'].addEntity(LearningSwitch(switch))
+    log.debug("Switch Join! %s " % switchjoin_event)
+    core.components['topology'].addEntity(LearningSwitch(switchjoin_event.switch))
     
