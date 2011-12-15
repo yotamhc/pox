@@ -129,8 +129,16 @@ class MockOpenFlowSwitch (OpenFlowSwitch):
     self.connect(self.switch_impl)
     
 class Link():
-  """ Punt on Murphy's graph-library for the NOM """
-  pass
+  """
+  Temporary stand in for Murphy's graph-library for the NOM.
+   
+  Note: Directed!
+  """
+  def __init__(self, start_switch_impl, start_port, end_switch_impl, end_port):
+    self.start_switch_impl = start_switch_impl
+    self.start_port = start_port
+    self.end_switch_impl = end_switch_impl
+    self.end_port = end_port
           
 class Message (object):
   """ So we can track a message throughout the network """
