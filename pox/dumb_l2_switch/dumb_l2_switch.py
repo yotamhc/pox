@@ -91,6 +91,8 @@ class LearningSwitch (EventMixin):
         log.debug("installing flow for %s.%i -> %s.%i" %
                   (packet.src, event.port, packet.dst, port))
         msg = of.ofp_flow_mod()
+        # TODO: ofp_match.from_packet matches the entire packet, not just l2.
+        #       Don't we want to be wildcarding everything but L2?
         msg.match = of.ofp_match.from_packet(packet)
         msg.idle_timeout = 10
         msg.hard_timeout = 30
