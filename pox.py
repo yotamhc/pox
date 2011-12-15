@@ -36,6 +36,7 @@ exec python -O "$0" "$@"
 
 from pox.core import core
 import pox.openflow as of
+import pox.openflow.of_01 as of_01
 import pox.nom_trap as nom_trap
 
 # Turn on extra info for event exceptions
@@ -276,7 +277,7 @@ def post_startup ():
   #core.register("switch", pox.dumb_l3_switch.dumb_l3_switch.dumb_l3_switch())
 
   if enable_openflow:
-    of.of_01.launch() # Always launch of_01
+    of_01.launch() # Always launch of_01
 
   if debug:
     nom_trap.launch()
