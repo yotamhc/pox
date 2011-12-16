@@ -13,6 +13,7 @@ import pox.openflow.libopenflow_01 as of
 from pox.lib.revent.revent import *
 
 from pox.topology.topology import *
+from pox.openflow.libopenflow_01 import ofp_action_output
 import pox.nom_trap.default_topology as default_topology
 from fuzzer_entities import *
 from event_generator import EventGenerator
@@ -273,6 +274,70 @@ class FuzzTester (Topology):
     # TODO: do we need to define more event types? e.g., packet delivered,
     # controller crashed, etc. An alternative might be to just generate
     # sensible traffic, and let the switch raise its own events.
-         
+    
+    def dump_csv(self):
+      """
+      For each switch in the network, dump it's Flow Table in csv format, 
+      for consumption by Anteater
+      
+      Returns a hash from switch_impl -> csv output
+      """
+      switch_impl2csv = {}
+      def switch_csv(switch):
+        """ Dump the Flow Table for a single switch """
+        # TODO: implement this as a method on SwitchImpl! Will need a mapping
+        #       of port -> next hop IP address
+        #
+        #       Only problem with putting it in SwitchImpl is that port -> next hop IP
+        #       assumes that the switch works at Layer 3...
+        lines = []
+        for entry in switch.table._table:
+          match, _, actions = entry 
+           
+          dst, prefix = match.get_nw_dst()
+          if dst is None:
+            dst = "0.0.0.0"
+          full_dst = '/'.join((str(dst), str(prefix)))
+          
+          # Default drop (no output action specified)
+          output_interface = "drop"
+          gateway = "DIRECT"
+          
+          for action in actions:
+            # TODO: assume that there is only one ofp_action_output in the list of actions?
+            if type(action) == ofp_action_output:
+              port_no = action.port
+              port = switch.ports[port_no]
+              port_name = port.name
+              if port_name == "":
+                port_name = "eth%d" % port_no
+              output_interface = port_name
+              gateway = switch.outgoing_links[port].end_port.ip_addr
+                      
+          # TODO: figure out what tags are used for in Anteater
+          tags = "O"
+      
+          csv = ','.join((full_dst, gateway, output_interface, tags))
+          lines.append(csv)
+          
+        # Now manually add in loopback devices
+        for port in switch.ports.values():
+          csv = "%s/32,DIRECT,loopback 1,O" % str(port.ip_addr)
+          lines.append(csv)
+        
+        # TODO: problem! Anteater assumes destination-based routing. OpenFlow is
+        # (source, destination)-based routing.
+        return "\n".join(lines)
+      
+      # Now, get a csv string for each switch
+      for switch in self.getEntitiesOfType(MockOpenFlowSwitch):
+        # TODO: don't assume that the switch has a reference to the implementation! For emulation, will need 
+        #       to fetch table of the implementation through a more realistic means
+        switch_impl = switch.switch_impl
+        csv_output = switch_csv(switch_impl)
+        switch_impl2csv[switch_impl] = csv_output
+      
+      return switch_impl2csv  
+        
 if __name__ == "__main__":
   pass
