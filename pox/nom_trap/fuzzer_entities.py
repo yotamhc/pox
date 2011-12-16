@@ -83,7 +83,7 @@ class MockOpenFlowSwitch (OpenFlowSwitch):
     # Instantiate the Switch Implementation here. We don't use self.switch_impl
     # to communicate directly with the switch, rather, we go through a Connection
     # object as in the normal OpenFlowSwitch implementation.
-    self.switch_impl = SwitchImpl(dpid, MockSocket(), ports=ofp_phy_ports)
+    self.switch_impl = SwitchImpl(dpid, MockSocket(), name="Switch # %d" % dpid, ports=ofp_phy_ports)
     self.connect(self.switch_impl)
     
   def connect(self, switch_impl):
