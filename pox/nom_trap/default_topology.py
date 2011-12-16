@@ -75,8 +75,8 @@ def populate(topology, num_switches=3):
     unconnected_neighbor_impls = filter(lambda n: n not in already_connected_neighbor_impls, all_neighbor_impls) 
     
     for other_switch_impl in unconnected_neighbor_impls:
-      our_port = filter(lambda p: p not in connected_ports, switch_impl.ports)[0]
-      neighbor_port = filter(lambda p: p not in connected_ports, other_switch_impl.ports)[0]
+      our_port = filter(lambda p: p not in connected_ports, switch_impl.ports.values())[0]
+      neighbor_port = filter(lambda p: p not in connected_ports, other_switch_impl.ports.values())[0]
         
       # Now we have two ports that haven't been connected yet
       connected_ports.add(our_port)
