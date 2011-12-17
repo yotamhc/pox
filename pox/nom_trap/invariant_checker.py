@@ -5,6 +5,7 @@ from fuzzer_entities import *
   
 import xml.etree.ElementTree as ET 
 import os
+import glob
 
 logger = core.getLogger()
 
@@ -14,9 +15,12 @@ class InvariantChecker():
     # TODO: don't hardcode!
     self.jruby_path =  "/Users/rcs/Research/UCB/pox-debugger/pox/lib/anteater/utils/jruby-1.6.5/bin/jruby"
     self.library_path = "/Users/rcs/Research/UCB/pox-debugger/pox/lib/anteater/build/lib/Ruby"
+    self.solver_path = "/Users/rcs/Research/UCB/pox-debugger/pox/lib/anteater/src/tools/scripts/Makefile.solve"
+    
+    # Individual invariant checks
     self.loop_detector = "/Users/rcs/Research/UCB/pox-debugger/pox/lib/anteater/src/tools/loop-detector.rb"
     self.consistency_detector = "/Users/rcs/Research/UCB/pox-debugger/pox/lib/anteater/src/tools/consistency-checker.rb"
-    self.blackhole_detector = "/Users/rcs/Research/UCB/pox-debugger/pox/lib/anteater/src/tools/packet_loss.rb"
+    self.blackhole_detector = "/Users/rcs/Research/UCB/pox-debugger/pox/lib/anteater/src/tools/packet-loss.rb"
     # TODO: where is the connectedness detector script?
     self.connectivity_detector = None
     
@@ -32,31 +36,41 @@ class InvariantChecker():
   #                    Invariant checks                           #
   # --------------------------------------------------------------#
   def check_loops(self):
-    self._run_anteater_script(self.loop_detector)
+    self._run_anteater_script(self.loop_detector, "lc-base")
     
   def check_blackholes(self):
-    self._run_anteater_script(self.blackhole_detector)
+    self._run_anteater_script(self.blackhole_detector, "pl-base")
     
   def check_connectivity(self):
-    self._run_anteater_script(self.connectivity_detector)
+    self._run_anteater_script(self.connectivity_detector, "lc-base")
   
   def check_routing_consistency(self):
-    self._run_anteater_script(self.consistency_detector)
+    # TODO: this takes a list as a second parameter. I think the list might be consistency constraints
+    self._run_anteater_script(self.consistency_detector, "cfc-base")
     
-  def _run_anteater_script(self, script):
+  def _run_anteater_script(self, script, output_prefix):
     log.debug("Snapshotting FIBs...")
     fib_manifest = self.generate_fib_manifest() 
+    log.debug("Generating contraints...")
     cmd = ' '.join((self.jruby_path, '-I', self.library_path, script, fib_manifest))
-    log.debug("Running Anteater...")
-    #current_dir = os.getcwd()
-    #log.debug("leaving %s" % current_dir)
-    #os.chdir("/tmp")
-    #log.debug("now in %s" % os.getcwd())
     log.debug(cmd)
     os.system(cmd)
-    #os.chdir(current_dir)
-    # TODO: rm *fib manifest.xml *bc
-    
+    log.debug("Invoking solver...")
+    cmd = ' '.join(("make", "-f", self.solver_path, "BC_SRCS=%s.bc" % output_prefix))
+    log.debug(cmd)
+    os.system(cmd)
+    # TODO: try catch block
+    output_reader = open("%s.result" % output_prefix, 'r')
+    result = output_reader.readline().strip()
+    output_reader.close()
+    log.info("Invariant check result: %s" % result)
+    if result == "sat":
+      log.debug("Cleaning up files...")
+      for extension in ["*fib", "manifest.xml", "*bc", "*result"]:
+        output_files = glob.glob(extension) 
+        for output_file in output_files:
+          os.remove(output_file)
+      
   # --------------------------------------------------------------#
   #                    FIB Snapshot                               #
   # --------------------------------------------------------------#
