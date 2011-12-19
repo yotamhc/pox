@@ -12,25 +12,25 @@ logger = core.getLogger()
 class InvariantChecker():
   def __init__(self, topology):
     self.topology = topology
-    # TODO: don't hardcode!
-    self.jruby_path =  "/Users/rcs/Research/UCB/pox-debugger/pox/lib/anteater/utils/jruby-1.6.5/bin/jruby"
-    self.library_path = "/Users/rcs/Research/UCB/pox-debugger/pox/lib/anteater/build/lib/Ruby"
-    self.solver_path = "/Users/rcs/Research/UCB/pox-debugger/pox/lib/anteater/src/tools/scripts/Makefile.solve"
+    current_dir = os.getcwd()
+    self.jruby_path = current_dir + "/pox/lib/anteater/utils/jruby-1.6.5/bin/jruby"
+    self.library_path = current_dir + "/pox/lib/anteater/build/lib/Ruby"
+    self.solver_path = current_dir + "/pox/lib/anteater/src/tools/scripts/Makefile.solve"
     
     # Individual invariant checks
-    self.loop_detector = "/Users/rcs/Research/UCB/pox-debugger/pox/lib/anteater/src/tools/loop-detector.rb"
-    self.consistency_detector = "/Users/rcs/Research/UCB/pox-debugger/pox/lib/anteater/src/tools/consistency-checker.rb"
-    self.blackhole_detector = "/Users/rcs/Research/UCB/pox-debugger/pox/lib/anteater/src/tools/packet-loss.rb"
+    self.loop_detector = current_dir + "/pox/lib/anteater/src/tools/loop-detector.rb"
+    self.consistency_detector = current_dir + "/pox/lib/anteater/src/tools/consistency-checker.rb"
+    self.blackhole_detector = current_dir +  "/pox/lib/anteater/src/tools/packet-loss.rb"
     # TODO: where is the connectedness detector script?
     self.connectivity_detector = None
     
     # Set up environment variables
-    os.environ['ANTEATER_BUILD_DIR']="/Users/rcs/Research/UCB/pox-debugger/pox/lib/anteater/build"
-    os.environ['ANTEATER_SRC_DIR']="/Users/rcs/Research/UCB/pox-debugger/pox/lib/anteater/src"
-    os.environ['LLVM_BIN_DIR']="/Users/rcs/Research/UCB/pox-debugger/pox/lib/anteater/dist/bin"
-    os.environ['LD_LIBRARY_PATH']="/Users/rcs/Research/UCB/pox-debugger/pox/lib/anteater/build/lib/Core:$LD_LIBRARY_PATH"
+    os.environ['ANTEATER_BUILD_DIR'] = current_dir + "/pox/lib/anteater/build"
+    os.environ['ANTEATER_SRC_DIR'] = current_dir +  "/pox/lib/anteater/src"
+    os.environ['LLVM_BIN_DIR'] = current_dir + "/pox/lib/anteater/dist/bin"
+    os.environ['LD_LIBRARY_PATH'] = current_dir + "/pox/lib/anteater/build/lib/Core:$LD_LIBRARY_PATH"
     os.environ['JRUBY_OPTS']="--server --1.9 -J-Xmx16384m -J-Djruby.compile.fastest=true -J-Djruby.compile.frameless=true -J-Djruby.compile.positionless=true -J-Djruby.compile.fastops=true -J-Djruby.compile.fastcase=true -J-Djruby.compile.lazyHandles=true"
-    os.environ['RUBY_EXECUTABLE']="/Users/rcs/Research/UCB/pox-debugger/pox/lib/anteater/utils/jruby-1.6.5/bin/jruby"
+    os.environ['RUBY_EXECUTABLE'] = current_dir + "/pox/lib/anteater/utils/jruby-1.6.5/bin/jruby"
     
   # --------------------------------------------------------------#
   #                    Invariant checks                           #
