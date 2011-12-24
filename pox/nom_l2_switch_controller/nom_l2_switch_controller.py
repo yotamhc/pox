@@ -26,6 +26,7 @@ import pox.openflow.libopenflow_01 as of
 from pox.openflow import PacketIn
 from pox.topology.topology import Switch, Entity
 from pox.lib.revent import *
+from controller import Controller
 
 log = core.getLogger()
 
@@ -133,26 +134,14 @@ class LearningSwitch (EventMixin, Entity):
 
 # In addition to declaring the user-defined NOM entity, the application must tell the platform
 # how and when to instantiate these NOM entities. We do this with the following controller:
-class nom_l2_switch_controller (EventMixin):
+class nom_l2_switch_controller (Controller):
   """ Controller that treats the network as a set of learning switches """
-  
-  # The set of components we depend on. These must be loaded before we can begin.
-  _wantComponents = set(['topology'])
 
   def __init__ (self):
     """ Initializes the l2 switch controller component """
+    Controller.__init__(self)
     log.debug("nom_l2_switch_controller booting...")
-    
-    if not core.resolveComponents(self, self._wantComponents):
-      # If dependencies aren't loaded, register event handlers for ComponentRegistered
-      self.listenTo(core)
-  
-  def _handle_ComponentRegistered (self, event):
-    """ Checks whether the newly registered component is one of our dependencies """
-    if core.resolveComponents(self, self._wantComponents):
-      # Note that core.resolveComponents registers our event handlers with the dependencies
-      return EventRemove
-    
+   
   def _handle_topology_SwitchJoin(self, switchjoin_event):
     """ Convert switches into Learning Switches """
     log.debug("Switch Join! %s " % switchjoin_event)
