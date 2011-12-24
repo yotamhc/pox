@@ -1,3 +1,9 @@
+'''
+Created on Dec 24, 2011
+
+@author: rcs
+'''
+
 #!/usr/bin/env pethon
 # Nom nom nom nom
 
@@ -15,7 +21,7 @@ import pox.openflow.libopenflow_01 as of
 from pox.lib.revent.revent import *
 from pox.lib.recoco.recoco import *
 
-from pox.nom_server.pyro4_daemon_loop import PyroLoop
+from pox.controllers.pyro4_daemon_loop import PyroLoop
 
 import sys
 import threading
@@ -28,8 +34,8 @@ import Pyro4.util
 sys.excepthook=Pyro4.util.excepthook
 
 log = core.getLogger()
-
-class NomClient:
+ 
+class Controller(EventMixin):
     """
     Keeps a copy of the Nom in its cache. Arbitrary controller applications
     can be implemented on top of NomClient through inheritance. Mutating calls to 
@@ -84,7 +90,7 @@ class NomClient:
         return True
         # TODO: react to the change in the NOM
 
-def main():
+def test():
     import time
     import random
 
@@ -94,7 +100,7 @@ def main():
 
     signal.signal(signal.SIGINT, sigint_handler)
 
-    nom_client = NomClient()
+    nom_client = Controller()
     time.sleep(2)
 
     while True:
@@ -105,4 +111,18 @@ def main():
         time.sleep(random.randint(0,4))
 
 if __name__ == "__main__":
-    main()
+    test()
+
+def launch ():
+  # import cached_nom ???
+  from pox.core import core
+  import Pyro4
+  server = Pyro4.Proxy("PYRONAME:nom_server.nom_server")
+  # Note: to run with a server other than NomServer, pass 
+  # in None. e.g.:
+  #   $ ./pox.py nom_client server=None
+  # What I really want to do is specifiy the core component name on the
+  # command line, e.g., 
+  #   $ ./pox.py nom_client server='core.components["NomTrap"]'
+  # but I believe that would require an `eval`
+  core.registerNew(Controller, server)

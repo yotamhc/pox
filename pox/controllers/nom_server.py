@@ -5,7 +5,7 @@ from pox.core import core
 import pox.openflow.libopenflow_01 as of
 from pox.lib.revent.revent import *
 
-from pox.nom_server.pyro4_daemon_loop import PyroLoop
+from pox.controllers.pyro4_daemon_loop import PyroLoop
 
 import Pyro4
 import Pyro4.util
@@ -115,3 +115,9 @@ class NomServer:
 if __name__ == "__main__":
     nom = NomServer()
     nom.daemon_thread.join()
+    
+    
+def launch():
+  from pox.core import core
+  core.registerNew(NomServer)
+
