@@ -42,5 +42,7 @@ class Controller (EventMixin):
     """ Checks whether the newly registered component is one of our dependencies """
     if core.resolveComponents(self, self._wantComponents):
       # Note that core.resolveComponents registers our event handlers with the dependencies
+      # TODO: add a named field for every component in  _wantComponents
+      self.topology = core.components['topology'] 
       return EventRemove
   
