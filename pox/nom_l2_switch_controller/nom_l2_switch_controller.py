@@ -26,7 +26,7 @@ import pox.openflow.libopenflow_01 as of
 from pox.openflow import PacketIn
 from pox.topology.topology import Switch, Entity
 from pox.lib.revent import *
-from controller import Controller
+from pox.controllers.controller import Controller
 
 log = core.getLogger()
 
