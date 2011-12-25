@@ -27,7 +27,11 @@ log = core.getLogger()
 # TODO: model hosts in the network!
 
 class MockSocket(object):
-  """ Send bytes directly from object to object, rather than opening a real socket """
+  """ 
+  Send bytes directly from object to object, rather than opening a real socket
+  
+  Requires that both ends of the socket maintain a Connection object
+  """
   def __init__(self, receiver_connection=None):
     self.receiver_connection = receiver_connection
     # Single element queue
