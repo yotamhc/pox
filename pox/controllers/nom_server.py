@@ -6,6 +6,7 @@ import pox.openflow.libopenflow_01 as of
 from pox.lib.revent.revent import *
 
 from pox.controllers.pyro4_daemon_loop import PyroLoop
+from pox.controllers.cached_nom import CachedNom
 
 import Pyro4
 import Pyro4.util
@@ -16,7 +17,6 @@ import subprocess
 import socket
 
 
-from cached_nom import CachedNom
 
 sys.excepthook=Pyro4.util.excepthook
 
