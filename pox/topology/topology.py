@@ -16,30 +16,13 @@
 # along with POX.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-The Topology module encapsulates the Network Object Model (NOM).
+The Topology module is the root of an object model composed of entities
+like switches, hosts, links, etc.  This object model is populated by other
+modules.  For example, openflow.topology populates the topology object
+with OpenFlow switches.
 
-This is the "substrate" NOM, containing non-virtualized (read: raw OpenFlow)
-entities.
-
-NOTE: this module is passive; it won't do anything unless other modules call
-methods on it. As an example, to populate it with OpenFlow switches you would 
-need to invoke:
+Note that this means that you often want to invoke something like:
    $ ./pox.py topology openflow.discovery openflow.topology
-   
-   
-topology is this module, which simply stores the NOM datastructure.
-
-openflow.discovery sends out LLDP packets and discovers OpenFLow
-switches in the network.
-
-openflow.topology is an "adaptor" between OpenFlow semantics and 
-topology semantics; it listens on openflow.discovery events, and pushes
-(generic) changes to this module.
-
-TODO: the above invocation is somewhat awkward and error-prone. Is there a better
-way to add Openflow switches to the NOM? I suppose this module is intended to 
-implement "OS"-functionality; when most applications move to using the NOM, the NOM
-will automatically be populated by pox. 
 """
 
 from pox.lib.revent import *
@@ -52,46 +35,82 @@ class EntityEvent (Event):
   def __init__ (self, entity):
     self.entity = entity
     
-# An entity is inserted into the NOM
-class EntityJoin (EntityEvent): pass
-# An entity is removed from the NOM
-class EntityLeave (EntityEvent): pass
+class EntityJoin (EntityEvent):
+  """
+  An entity has been added.
+
+  Note that if there is a more specific join event defined for a particular
+  entity, (e.g., SwitchJoin), this event will not be fired.
+
+  TODO: or we could always raise EntityJoins along with SwitchJoins, which
+  seems more intuitive to me.
+  """
+  pass
+
+class EntityLeave (EntityEvent):
+  """
+  An entity has been removed 
+
+  Note that if there is a more specific leave event defined for a particular
+  entity, (e.g., SwitchLeave), this event will not be fired.
+
+  TODO: or we could always raise EntityLeaves along with SwitchLeaves, which
+  seems more intuitive to me.
+  """
+  pass
 
 class SwitchEvent (EntityEvent): pass
-# As opposed to ConnectionUp, SwitchJoin occurs over large time scales 
-# (e.g. an administrator physically moving a switch). 
+
 class SwitchJoin (SwitchEvent): 
+  """
+  As opposed to ConnectionUp, SwitchJoin occurs over large time scales
+  (e.g. an administrator physically moving a switch).
+  """
   def __init__ (self, switch):
     self.switch = switch
     
-# As opposed to ConnectionDown, SwitchLeave occurs over large time scales 
-# (e.g. an administrator physically moving a switch). 
-class SwitchLeave (SwitchEvent): pass
+class SwitchLeave (SwitchEvent):
+  """
+  As opposed to ConnectionDown, SwitchLeave occurs over large time scales
+  (e.g. an administrator physically moving a switch).
+  """
+  pass
 
 class HostEvent (EntityEvent): pass
 class HostJoin (HostEvent): pass
 class HostLeave (HostEvent): pass
+
+class Update (Event):
+  """
+  Fired by Topology whenever anything has changed
+  """
+  def __init__ (self, event):
+    self.event = event
 
 class Entity (object):
   """ 
   Note that the Entity class is intentionally simple; It only serves as a 
   convenient SuperClass type.
   
-  It's up to subclasses to implement specific functionality (e.g. OpenFlow1.0 
-  switch functionality). This is possible since Python is a dynamic language... 
-  the purpose of this design decision is to prevent protocol specific details
-  from being leaked into this module... But this design decision does /not/
-  imply that pox.toplogy serves to define a generic interface to abstract
-  entity types.
+  It's up to subclasses to implement specific functionality (e.g.
+  OpenFlow1.0 switch functionality).  The purpose of this design decision
+  is to prevent protocol specific details from being leaked into this
+  module... but this design decision does /not/ imply that pox.toplogy
+  serves to define a generic interface to abstract entity types.
   """
-  # Globally unique id for this entity
-  ID = 0
+  # This is a counter used so that we can get unique IDs for entities.
+  # Some entities don't need this because they have more meaningful
+  # identifiers.
+  _next_id = 0
   
   def __init__ (self):
-    Entity.ID += 1
-    self.id = Entity.ID
+    Entity._next_id += 1
+    self.id = Entity._next_id
 
 class Host (Entity):
+  """
+  A generic Host entity.
+  """
   def __init__(self):
     Entity.__init__(self)
 
@@ -101,7 +120,8 @@ class Switch (Entity):
   e.g. pox.openflow.topology.OpenFlowSwitch
   """
   def __init__(self, id):
-    # Switch takes a dpid instead of calling super constructor
+    # Switches often have something more meaningful to use as an ID
+    # (e.g., a DPID or MAC address), so they take it as a parameter.
     self.id = id
 
 class Port (Entity):
@@ -112,12 +132,6 @@ class Port (Entity):
     self.name = name
 
 class Topology (EventMixin):
-  # Hmm, it's not clear that we want these events. An alternative would be to have 
-  # all applications interested in using the NOM to define a method `nom_update()`, which
-  # feeds in updated NOMs. We then call that single interface when any of the events below
-  # occur. Makes it a little easier for the application programmer, I would argue. Haven't
-  # thought about it too deeply though... This definitely gives the programmer more 
-  # fine-grained control over the events they see.
   _eventMixin_events = [
     SwitchJoin,
     SwitchLeave,
@@ -125,29 +139,39 @@ class Topology (EventMixin):
     HostLeave,
     EntityJoin,
     EntityLeave,
+
+    Update
   ]
   
   _core_name = "topology" # We want to be core.topology
 
   def __init__ (self):
     EventMixin.__init__(self)
-    self.entities = {}
+    self._entities = {}
     
-    # If a client registers a handler for these events after they have already
-    # occurred, we promise to re-issue them to the newly joined client.
+    # If a client registers a handler for these events after they have
+    # already occurred, we promise to re-issue them to the newly joined
+    # client.
     self._event_promises = {
       SwitchJoin : self._fulfill_SwitchJoin_promise
     }
 
+  @property
+  def entity (self, ID):
+    return self._entities.get(ID)
+
   def getEntityByID (self, ID, fail=False):
-    """ Raises an exception if fail is True and the entity is not in the NOM """    
+    """
+    Raises an exception if fail is True and the entity doesn't exist
+    See also: The 'entity' property.
+    """
     if fail:
-      return self.entities[ID]
+      return self._entities[ID]
     else:
-      return self.entities.get(ID, None)
+      return self._entities.get(ID, None)
 
   def removeEntity (self, entity):
-    del self.entities[entity.id]
+    del self._entities[entity.id]
     log.info(str(entity) + " left")
     if isinstance(entity, Switch):
       self.raiseEvent(SwitchLeave, entity)
@@ -157,9 +181,10 @@ class Topology (EventMixin):
       self.raiseEvent(EntityLeave, entity)
 
   def addEntity (self, entity):
-    """ Will raise an exception if entity.id is already in the NOM """
-    assert entity.id not in self.entities
-    self.entities[entity.id] = entity
+    """ Will raise an exception if entity.id already exists """
+    if entity.id in self._entities:
+      raise RuntimeError("Entity exists")
+    self._entities[entity.id] = entity
     log.info(str(entity) + " joined")
     if isinstance(entity, Switch):
       self.raiseEvent(SwitchJoin, entity)
@@ -170,21 +195,12 @@ class Topology (EventMixin):
 
   def getEntitiesOfType (self, t=Entity, subtypes=True):
     if subtypes is False:
-      return filter(lambda x: type(x) is t, self.entities.values())
+      return [x for x in self._entities.itervalues() if type(x) is t]
     else:
-      return filter(lambda x: isinstance(x, t), self.entities.values())
+      return [x for x in self._entities.itervalues() if isinstance(x, t)]
 
-  def getSwitchWithConnection (self, connection):
-    """
-    OpenFlow events only contain a refence to a connection object, not a
-    switch object. Perhaps this should be changed, but for now, find the
-    switch the corresponding connection object.
-    
-    Return None if no such switch found.
-    """
-    self.getEntitiesOfType(Switch).find(lambda switch: switch.connection == connection)
-    
-  def addListener(self, eventType, handler, once=False, weak=False, priority=None, byName=False):
+  def addListener(self, eventType, handler, once=False, weak=False,
+                  priority=None, byName=False):
     """
     We interpose on EventMixin.addListener to check if the eventType is
     in our promise list. If so, trigger the handler for all previously
@@ -193,8 +209,20 @@ class Topology (EventMixin):
     if eventType in self._event_promises:
       self._event_promises[eventType](handler)
     
-    return EventMixin.addListener(self, eventType, handler, once=once, weak=weak, priority=priority, byName=byName)
-  
+    return EventMixin.addListener(self, eventType, handler, once=once,
+                                  weak=weak, priority=priority,
+                                  byName=byName)
+
+  def raiseEvent (self, event, *args, **kw):
+    """
+    Whenever we raise any event, we also raise an Update, so we extend
+    the implementation in EventMixin.
+    """
+    rv = EventMixin.raiseEvent(self, event, *args, **kw)
+    if type(event) is not Update:
+      EventMixin.raiseEvent(self, Update(event))
+    return rv
+
   def _fulfill_SwitchJoin_promise(self, handler):
     """ Trigger the SwitchJoin handler for all pre-existing switches """
     for switch in self.getEntitiesOfType(Switch, True):
@@ -203,8 +231,8 @@ class Topology (EventMixin):
   def __str__(self):
     # TODO: display me graphically
     strings = []
-    strings.append("topology (%d total entities)" % len(self.entities))
-    for id,entity in self.entities:
+    strings.append("topology (%d total entities)" % len(self._entities))
+    for id,entity in self._entities:
       strings.append("%s %s" % (str(id), str(entity))) 
       
     return strings
