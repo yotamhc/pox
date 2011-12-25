@@ -112,11 +112,6 @@ class NomServer:
             client.update_nom(val)
             log.info("invalidating/updating %s" % client)
             
-if __name__ == "__main__":
-    nom = NomServer()
-    nom.daemon_thread.join()
-    
-    
 def launch():
   from pox.core import core
   core.registerNew(NomServer)

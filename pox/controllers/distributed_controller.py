@@ -91,29 +91,6 @@ class Controller(EventMixin):
         return True
         # TODO: react to the change in the NOM
 
-def test():
-    import time
-    import random
-
-    def sigint_handler(signum, frame):
-        import os
-        os._exit(signum)
-
-    signal.signal(signal.SIGINT, sigint_handler)
-
-    nom_client = Controller()
-    time.sleep(2)
-
-    while True:
-        # test read operation
-        nom_client.nom.items()
-        # test write operation 
-        nom_client.nom[random.randint(0,100)] = random.randint(0,100)
-        time.sleep(random.randint(0,4))
-
-if __name__ == "__main__":
-    test()
-
 def launch ():
   from pox.core import core
   import Pyro4
