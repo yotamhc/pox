@@ -54,7 +54,7 @@ class Controller(EventMixin):
     |                        |   <-------------------     |                        |
     ==========================                            ==========================
     """
-    def __init__(self, server=core.components['NomServer']):
+    def __init__(self, server):
         self.server = server
         daemon = Pyro4.Daemon()
         self.uri = daemon.register(self)
@@ -64,6 +64,7 @@ class Controller(EventMixin):
         core.addListener(pox.core.GoingUpEvent, self.register_with_server)
 
     def register_with_server(self, event):
+        log.debug("self.server %s" % self.server)
         self.server.register_client(self)
         log.debug("registered with NomServer")
         self.nom = self.server.get()
@@ -114,15 +115,8 @@ if __name__ == "__main__":
     test()
 
 def launch ():
-  # import cached_nom ???
   from pox.core import core
   import Pyro4
-  server = Pyro4.Proxy("PYRONAME:nom_server.nom_server")
-  # Note: to run with a server other than NomServer, pass 
-  # in None. e.g.:
-  #   $ ./pox.py nom_client server=None
-  # What I really want to do is specifiy the core component name on the
-  # command line, e.g., 
-  #   $ ./pox.py nom_client server='core.components["NomTrap"]'
-  # but I believe that would require an `eval`
+  # server = Pyro4.Proxy("PYRONAME:nom_server.nom_server")
+  server = core.components['NomServer'] # TODOC: for simulation, just grab a direct reference
   core.registerNew(Controller, server)
