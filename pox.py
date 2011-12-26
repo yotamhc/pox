@@ -62,6 +62,7 @@ def doImport (name):
     # because one IT tried to import wasn't found.  Try to sort this...
     s = str(sys.exc_info()[1]).rsplit(" ", 1)[1]
     if name.endswith(s):
+      # It was the one we tried to import itself.
       #print s,"|",name
       return True
     else:
