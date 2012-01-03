@@ -40,8 +40,8 @@ class NomServer:
     |                        |   any mutating operation   |                        |
     |                        |  -------------------->     |server.put(nom)         |
     |                        |                            |                        |
-    |          client.       |   cache invalidation, or   |                        |
-    |            update_nom()|   network event            |                        |
+    |          client.       |                            |                        |
+    |            update_nom()|    cache invalidation      |                        |
     |                        |   <-------------------     |                        |
     ==========================                            ==========================
     """
@@ -83,6 +83,7 @@ class NomServer:
         server_proxy = Pyro4.Proxy("PYRONAME:nom_server.nom_server")
         # don't wait for a response from `put` calls
         server_proxy._pyroOneway.add("put")
+        # TODO: change to topology
         self.nom = CachedNom(server_proxy)
         self.registered = []
 
