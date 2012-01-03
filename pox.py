@@ -223,7 +223,6 @@ cli = True
 verbose = False
 enable_openflow = True
 debug = False
-script = False
 
 def _opt_no_openflow (v):
   global enable_openflow
@@ -245,22 +244,7 @@ def _opt_debug (v):
     # debug implies no openflow 
     _opt_no_openflow(True)
     _opt_no_cli(True)
-    
-def _opt_script (v):
-  """
-  Run the given script after pox.core has gone up. Useful for unit-testing
-  
-  v - python module to execute
-  """
-  global script
-  _opt_no_cli(True)
-  if type(v) is bool:
-    print "--script option requires a specified python module"
-    return # Raise an exception instead?
-  script = v
-
 def process_options ():
-  # TODO: define this list somewhere else. Or use an option-parsing library.
   for k,v in options.iteritems():
     rk = '_opt_' + k.replace("-", "_")
     if rk in globals():
@@ -300,7 +284,6 @@ def _monkeypatch_console ():
   The readline in pypy (which is the readline from pyrepl) turns off output
   postprocessing, which disables normal NL->CRLF translation.  An effect of
   this is that output *from other threads* (like log messages) which try to
-  global debug
   print newlines end up just getting linefeeds and the output is all stair-
   stepped.  We monkeypatch the function in pyrepl which disables OPOST to turn
   OPOST back on again.  This doesn't immediately seem to break anything in the
@@ -337,7 +320,7 @@ def main ():
     import traceback
     traceback.print_exc()
     return
-  
+
   if cli:
     print "This program comes with ABSOLUTELY NO WARRANTY.  This program is " \
           "free software,"
@@ -350,10 +333,9 @@ def main ():
     import sys
     sys.ps1 = "POX> "
     sys.ps2 = " ... "
-    code.interact('Ready.', local=locals())
-  elif options['script']:
-    # TODO: __import__ is kind of hacky, to load a string rather than a module.
-    __import__(options['script'])
+    l = dict(locals())
+    l['core'] = core
+    code.interact('Ready.', local=l)
   else:
     try:
       import time
