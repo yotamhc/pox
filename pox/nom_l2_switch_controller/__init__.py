@@ -19,12 +19,12 @@
 This package contains a nom-based L2 learning switch.
 """
 
-def launch (debug=False):
+def launch (debug=False, distributed=False):
   # TODO: need a more transparent mechanism for specifying the debug flag...
   """
   Starts a NOM-based L2 learning switch, along with the discovery and topology modules
   """
-  if not debug:
+  if not debug and not distributed:
     import pox.topology
     pox.topology.launch() 
     import pox.openflow.discovery
@@ -32,6 +32,18 @@ def launch (debug=False):
     import pox.openflow.topology
     pox.openflow.topology.launch()
 
-  import nom_l2_switch_controller
   from pox.core import core
-  core.registerNew(nom_l2_switch_controller.nom_l2_switch_controller)
+  if not distributed:
+    import nom_l2_switch_controller
+    core.registerNew(nom_l2_switch_controller.nom_l2_switch_controller)
+  else:
+    import distributed_nom_l2_switch_controller
+    # server = Pyro4.Proxy("PYRONAME:nom_server.nom_server")
+    server = core.components['NomServer'] # TODOC: for simulation, just grab a direct reference
+    # TODO: convert `distributed` to an integer
+    for _ in range(0, distributed):
+      # TODO: no sure if I should be registering these with core
+      # (name conflict, and not suitable for emulation with true distrbuted controller)
+      # for now this is just to keep the controllers from being garbage collected
+      core.registerNew(distributed_nom_l2_switch_controller.nom_l2_switch_controller, server)
+      

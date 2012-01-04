@@ -22,19 +22,19 @@ It converts NOM switch entities into LearningSwitches.
 """
 
 from pox.core import core
-from pox.controllers.controller import Controller
+from pox.controllers.distributed_controller import DistributedController
 from learning_switch import LearningSwitch
 
 log = core.getLogger()
 
 # In addition to declaring the user-defined NOM entity, the application must tell the platform
 # how and when to instantiate these NOM entities. We do this with the following controller:
-class nom_l2_switch_controller (Controller):
+class nom_l2_switch_controller (DistributedController):
   """ Controller that treats the network as a set of learning switches """
 
   def __init__ (self):
     """ Initializes the l2 switch controller component """
-    Controller.__init__(self)
+    DistributedController.__init__(self)
     log.debug("nom_l2_switch_controller booting...")
    
   def _handle_topology_SwitchJoin(self, switchjoin_event):
