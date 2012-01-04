@@ -66,9 +66,6 @@ class SwitchImpl(object):
     else:
         self.capabilities = SwitchCapabilities(miss_send_len)
 
-  def demux_openflow(self, raw_bytes):
-    pass
-    
   # ==================================== #
   #    Reactive OFP processing           #
   # ==================================== #
