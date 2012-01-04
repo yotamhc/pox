@@ -15,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with POX.  If not, see <http://www.gnu.org/licenses/>.
 
-
 from pox.core import core
 import pox.openflow.libopenflow_01 as of
 from pox.openflow import PacketIn
@@ -34,6 +33,7 @@ class Controller (EventMixin):
   _wantComponents = set(['topology'])
   
   def __init__(self):
+    self.topology = None
     if not core.resolveComponents(self, self._wantComponents):
       # If dependencies aren't loaded, register event handlers for ComponentRegistered
       self.listenTo(core)
@@ -44,5 +44,7 @@ class Controller (EventMixin):
       # Note that core.resolveComponents registers our event handlers with the dependencies
       # TODO: add a named field for every component in  _wantComponents
       self.topology = core.components['topology'] 
+      # Register the subclass' handlers
+      self.listenTo(self.topology)
       return EventRemove
   
