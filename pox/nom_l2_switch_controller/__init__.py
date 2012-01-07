@@ -52,6 +52,6 @@ def launch (debug=False, distributed=False):
       # TODO: no sure if I should be registering these with core
       # (name conflict, and not suitable for emulation with true distrbuted controller)
       # for now this is just to keep the controllers from being garbage collected
-      name = "l2_switch_controller#%d" % id
+      name = "controller#%d" % id
       core.register(name, distributed_nom_l2_switch_controller.nom_l2_switch_controller(server, name))
       

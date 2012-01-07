@@ -17,7 +17,7 @@ import socket
 
 sys.excepthook=Pyro4.util.excepthook
 
-log = core.getLogger()
+log = core.getLogger("nom_server")
 
 class NomServer (EventMixin):
   """

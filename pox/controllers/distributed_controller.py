@@ -27,8 +27,6 @@ import Pyro4.util
 
 sys.excepthook=Pyro4.util.excepthook
 
-log = core.getLogger()
- 
 class DistributedController(EventMixin):
   """
   Keeps a copy of the Nom in its cache. Arbitrary controller applications
@@ -48,12 +46,14 @@ class DistributedController(EventMixin):
   |                        |   <-------------------     |                        |
   ==========================                            ==========================
   """
-  def __init__(self, server):
+  def __init__(self, server, name):
     """
     Note that server may be a direct reference to the NomServer (for simulation), or a Pyro4 proxy
     (for emulation)
     """
     self.server = server
+    self.name = name
+    self.log = core.getLogger(name)
     self.topology = None
     daemon = Pyro4.Daemon()
     self.uri = daemon.register(self)
@@ -64,11 +64,11 @@ class DistributedController(EventMixin):
     core.addListener(UpEvent, self._register_with_server)
 
   def _register_with_server(self, event):
-    log.debug("self.server %s" % self.server)
+    self.log.debug("self.server %s" % self.server)
     self.server.register_client(self)
-    log.debug("registered with NomServer")
+    self.log.debug("registered with NomServer")
     self.topology = self.server.get()
-    log.debug("Fetched nom from nom_server")
+    self.log.debug("Fetched nom from nom_server")
     self.listenTo(self.topology, "topology")
 
   # This should really be handler for an Event defined by pox.core
@@ -87,7 +87,7 @@ class DistributedController(EventMixin):
       ii. Either POX or this client (should) register this method as a
           handler for network events.
     """
-    log.info("Updating nom from %s to %s " % (self.topology, topology))
+    self.log.info("Updating nom from %s to %s " % (self.topology, topology))
     self.topology = topology
     # Register subclass' event handlers
     self.listenTo(topology, "topology")

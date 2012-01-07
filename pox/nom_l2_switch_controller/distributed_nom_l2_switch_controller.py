@@ -21,7 +21,6 @@ This is a prototype control application written on top of the (substrate) NOM.
 It converts NOM switch entities into LearningSwitches.
 """
 
-from pox.core import core
 from pox.controllers.distributed_controller import DistributedController
 from learning_switch import LearningSwitch
 
@@ -32,9 +31,7 @@ class nom_l2_switch_controller (DistributedController):
 
   def __init__ (self, server, name=""):
     """ Initializes the l2 switch controller component """
-    DistributedController.__init__(self, server)
-    self.name = name
-    self.log = core.getLogger(name)
+    DistributedController.__init__(self, server, name)
     self.log.debug("nom_l2_switch_controller booting...")
    
   def _handle_topology_SwitchJoin(self, switchjoin_event):

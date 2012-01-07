@@ -5,8 +5,6 @@ from pox.openflow import PacketIn
 from pox.topology.topology import Switch, Entity
 from pox.lib.revent import EventMixin
 
-log = core.getLogger()
-
 # Note that control applications are /stateless/; they are simply a function:
 #    f(view) -> configuration
 #
@@ -65,6 +63,7 @@ class LearningSwitch (EventMixin, Entity):
     # entities.
     Entity.__init__(self) 
     self.switch = switch
+    self.log = core.getLogger("nom_" + self.switch.name)
 
     # We define our own state
     self.macToPort = {}
@@ -74,7 +73,7 @@ class LearningSwitch (EventMixin, Entity):
 
   def _handle_PacketIn (self, packet_in_event):
     """ Event handler for PacketIn events: run the learning switch algorithm """
-    log.debug("PacketIn_handler! packet_in_event: %s" % (str(packet_in_event)))
+    self.log.debug("PacketIn_handler! packet_in_event: %s" % (str(packet_in_event)))
     
     def flood ():
       """ Floods the packet """
@@ -92,12 +91,12 @@ class LearningSwitch (EventMixin, Entity):
       flood() # 2a
     else:
       if packet.dst not in self.macToPort:
-        log.debug("port for %s unknown -- flooding" % (packet.dst,))
+        self.log.debug("port for %s unknown -- flooding" % (packet.dst,))
         flood() # 2ba
       else:
         # 2bb
         port = self.macToPort[packet.dst]
-        log.debug("installing flow for %s.%i -> %s.%i" %
+        self.log.debug("installing flow for %s.%i -> %s.%i" %
                   (packet.src, packet_in_event.port, packet.dst, port))
         # TODO: there should really be a static method in pox.openflow that constructs this
         # this packet for us.

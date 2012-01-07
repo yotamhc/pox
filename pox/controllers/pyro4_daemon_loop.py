@@ -31,7 +31,9 @@ class PyroLoop (Task):
 
     def run(self):
         while core.running:
+            print str(self.daemon), "yielding..."
             rlist,_,_ = yield Select(self.daemon_sockets, [], [], 3)
+            print str(self.daemon), "events!"
             events = []
             for read_sock in rlist:
                 if read_sock in self.daemon_sockets:
