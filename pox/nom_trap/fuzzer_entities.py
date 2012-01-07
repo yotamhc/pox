@@ -22,8 +22,6 @@ from pox.openflow.switch_impl import SwitchImpl
 from pox.openflow.of_01 import Connection
 from pox.core import core
 
-log = core.getLogger()
-
 # TODO: model hosts in the network!
 
 class MockSocket(object):
@@ -88,6 +86,7 @@ class MockOpenFlowSwitch (OpenFlowSwitch):
     # to communicate directly with the switch, rather, we go through a Connection
     # object as in the normal OpenFlowSwitch implementation.
     self.name = "switch#%d" % dpid
+    self.log = core.getLogger("nom_" + self.name)
     self.switch_impl = SwitchImpl(dpid, MockSocket(), name=self.name, ports=ofp_phy_ports)
     self.connect(self.switch_impl)
     
@@ -121,7 +120,7 @@ class MockOpenFlowSwitch (OpenFlowSwitch):
     
   def fail(self):
     if self.failed:
-      log.warn("Switch already failed")
+      self.log.warn("Switch already failed")
     self.failed = True
     # TODO: depending on the type of failure, a real switch failure
     # might not lead to an immediate disconnect
@@ -129,7 +128,7 @@ class MockOpenFlowSwitch (OpenFlowSwitch):
     
   def recover(self):
     if not self.failed:
-      log.warn("Switch already up")
+      self.log.warn("Switch already up")
     self.failed = False
     self.connect(self.switch_impl)
     

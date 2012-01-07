@@ -63,7 +63,7 @@ class LearningSwitch (EventMixin, Entity):
     # entities.
     Entity.__init__(self) 
     self.switch = switch
-    self.log = core.getLogger("nom_" + self.switch.name)
+    self.log = core.getLogger("learning_" + self.switch.name)
 
     # We define our own state
     self.macToPort = {}

@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 import os
 import glob
 
-logger = core.getLogger()
+log = core.getLogger("invariant_checker")
 
 class InvariantChecker():
   def __init__(self, topology):

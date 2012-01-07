@@ -29,7 +29,7 @@ import random
 import os
 
 
-log = core.getLogger()
+log = core.getLogger("debugger")
 
 class FuzzTester (Topology):
     # TODO: future feature: split this into Manager superclass and
@@ -286,6 +286,7 @@ class FuzzTester (Topology):
           print "  'b' - blackholes"
           print "  'r' - routing consistency"
           print "  'c' - connectivity"
+          print "  ",
           answer = raw_input()
           if answer.lower() == 'l':
             self.invariant_checker.check_loops()
