@@ -21,8 +21,7 @@ class InvariantChecker():
     self.loop_detector = current_dir + "/pox/lib/anteater/src/tools/loop-detector.rb"
     self.consistency_detector = current_dir + "/pox/lib/anteater/src/tools/consistency-checker.rb"
     self.blackhole_detector = current_dir +  "/pox/lib/anteater/src/tools/packet-loss.rb"
-    # TODO: where is the connectedness detector script?
-    self.connectivity_detector = None
+    self.connectivity_detector = current_dir +  "/pox/lib/anteater/src/tools/all-pair-reachability-checker.rb"
     
     # Set up environment variables
     os.environ['ANTEATER_BUILD_DIR'] = current_dir + "/pox/lib/anteater/build"
@@ -36,33 +35,43 @@ class InvariantChecker():
   #                    Invariant checks                           #
   # --------------------------------------------------------------#
   def check_loops(self):
-    return self._run_anteater_script(self.loop_detector, "lc-base")
+    return self._run_anteater_script(self.loop_detector)
     
   def check_blackholes(self):
-    return self._run_anteater_script(self.blackhole_detector, "pl-base")
+    return self._run_anteater_script(self.blackhole_detector)
     
   def check_connectivity(self):
-    return self._run_anteater_script(self.connectivity_detector, "lc-base")
+    return self._run_anteater_script(self.connectivity_detector)
   
   def check_routing_consistency(self):
     # TODO: this takes a list as a second parameter. I think the list might be consistency constraints
-    return self._run_anteater_script(self.consistency_detector, "cfc-base")
+    return self._run_anteater_script(self.consistency_detector)
     
-  def _run_anteater_script(self, script, output_prefix):
+  def _run_anteater_script(self, script):
     log.debug("Snapshotting FIBs...")
-    fib_manifest = self.generate_fib_manifest() 
+    if script == self.connectivity_detector:
+      fib_manifest = self.generate_connectivity_input()
+    else:
+      fib_manifest = self.generate_fib_manifest() 
     log.debug("Generating contraints...")
     cmd = ' '.join((self.jruby_path, '-I', self.library_path, script, fib_manifest))
     log.debug(cmd)
     os.system(cmd)
     log.debug("Invoking solver...")
-    cmd = ' '.join(("make", "-f", self.solver_path, "BC_SRCS=%s.bc" % output_prefix))
+    binary_constraints = " ".join(glob.glob("*bc"))
+    cmd = ' '.join(("make", "-f", self.solver_path, "BC_SRCS='%s'" % binary_constraints))
     log.debug(cmd)
     os.system(cmd)
     # TODO: try catch block
-    output_reader = open("%s.result" % output_prefix, 'r')
-    result = output_reader.readline().strip()
-    output_reader.close()
+    result = "sat"
+    results_files = glob.glob("*result")
+    for input in results_files:
+      output_reader = open(input, 'r')
+      output = output_reader.readline().strip()
+      if output != "sat":
+        result = output
+      output_reader.close()
+      
     log.debug("Cleaning up files...")
     for extension in ["*fib", "manifest.xml", "*bc", "*result"]:
       output_files = glob.glob(extension) 
@@ -70,7 +79,6 @@ class InvariantChecker():
         os.remove(output_file)
     # TODO: if not sat, help the user find the problem somehow? ;)
     return result
-      
       
   # --------------------------------------------------------------#
   #                    FIB Snapshot                               #
@@ -160,3 +168,38 @@ class InvariantChecker():
     output_name = "manifest.xml"
     tree.write(output_name)
     return output_name
+  
+  def generate_connectivity_input(self):
+    """ Anteater code is really *%$@! terrible. They assume a different input format (only have support for unit tests) for connectivity """
+    root = ET.Element("test")
+    network = ET.SubElement(root, "network")
+    for switch in self.topology.getEntitiesOfType(MockOpenFlowSwitch):
+      node = ET.SubElement(network, "router")
+      node.set("id", str(switch.dpid))
+      node.set("name", switch.name)
+      
+      switch_impl = switch.switch_impl
+      for port_no in switch_impl.ports.keys():
+        interface = ET.SubElement(node, "interface")
+        interface.set("id", str(port_no))
+        port = switch_impl.ports[port_no]
+        next_hop_id = switch_impl.outgoing_links[port].end_switch_impl.dpid
+        interface.set("nexthop_id", str(next_hop_id))
+        for entry in switch_impl.table.entries_for_port(port_no):
+          match, _, actions = entry
+          dst, prefix = match.get_nw_dst()
+          if dst is None:
+            dst = "0.0.0.0"
+          full_dst = '/'.join((str(dst), str(prefix)))
+          fib_entry = ET.SubElement(interface, "fib")
+          fib_entry.set("dest", full_dst)
+          
+        # Add a loopback
+        loopback_entry = ET.SubElement(interface, "fib")
+        loopback_entry.set("dest", '/'.join((port.ip_addr, "32")))
+        
+    tree = ET.ElementTree(root)   
+    output_name = "connectivity_fibs.xml"
+    tree.write(output_name)
+    return output_name
+     
