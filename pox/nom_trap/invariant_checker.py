@@ -13,7 +13,7 @@ class InvariantChecker():
   def __init__(self, topology):
     self.topology = topology
     current_dir = os.getcwd()
-    self.jruby_path = current_dir + "/pox/lib/anteater/utils/jruby-1.6.5/bin/jruby"
+    self.jruby_path = current_dir + "/pox/lib/anteater/jruby-1.6.5/bin/jruby"
     self.library_path = current_dir + "/pox/lib/anteater/build/lib/Ruby"
     self.solver_path = current_dir + "/pox/lib/anteater/src/tools/scripts/Makefile.solve"
     
@@ -30,7 +30,7 @@ class InvariantChecker():
     os.environ['LLVM_BIN_DIR'] = current_dir + "/pox/lib/anteater/dist/bin"
     os.environ['LD_LIBRARY_PATH'] = current_dir + "/pox/lib/anteater/build/lib/Core:$LD_LIBRARY_PATH"
     os.environ['JRUBY_OPTS']="--server --1.9 -J-Xmx16384m -J-Djruby.compile.fastest=true -J-Djruby.compile.frameless=true -J-Djruby.compile.positionless=true -J-Djruby.compile.fastops=true -J-Djruby.compile.fastcase=true -J-Djruby.compile.lazyHandles=true"
-    os.environ['RUBY_EXECUTABLE'] = current_dir + "/pox/lib/anteater/utils/jruby-1.6.5/bin/jruby"
+    os.environ['RUBY_EXECUTABLE'] = current_dir + "/pox/lib/anteater/jruby-1.6.5/bin/jruby"
     
   # --------------------------------------------------------------#
   #                    Invariant checks                           #
