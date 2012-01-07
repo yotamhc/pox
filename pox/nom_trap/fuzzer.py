@@ -172,26 +172,23 @@ class FuzzTester (Topology):
       """
       Start the fuzzer loop!
       """
-      # TODO: I need to interpose on all client calls to recoco Timeouts or
-      # other blocking tasks... we're just running in an infinite loop here, and
-      # won't be yielding to recoco. We don't need the default of_01_Task, since
-      # we're simulating all of our own network elements
       log.debug("Starting fuzz loop")
-      
-      self.running = True
-      
-      while(self.running):
-        self.logical_time += 1
-        self.trigger_events()
-        msg.event("Round %d completed." % self.logical_time)
-        self.invariant_check_prompt()
-        answer = msg.raw_input('Continue to next round? [Yn]')
-        if answer != '' and answer.lower() != 'y':
-          self.stop()
+      self.loop()
+       
+    def loop(self):
+      self.logical_time += 1
+      self.trigger_events()
+      msg.event("Round %d completed." % self.logical_time)
+      # TODO: print out the state of the network at each timestep? Take a
+      # verbose flag..
+      self.invariant_check_prompt()
+      answer = msg.raw_input('Continue to next round? [Yn]').strip()
+      if answer != '' and answer.lower() != 'y':
+        self.stop()
+      else:
+        # Schedule ourselves to loop again
+        core.callLater(self.loop)
           
-        # TODO: print out the state of the network at each timestep? Take a
-        # verbose flag..
-        
     def stop(self):
       self.running = False
       msg.event("Fuzzer stopping...")
