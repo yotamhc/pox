@@ -25,7 +25,7 @@ from pox.core import core
 from pox.controllers.controller import Controller
 from learning_switch import LearningSwitch
 
-log = core.getLogger()
+log = core.getLogger("controller")
 
 # In addition to declaring the user-defined NOM entity, the application must tell the platform
 # how and when to instantiate these NOM entities. We do this with the following controller:
