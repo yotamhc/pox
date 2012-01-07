@@ -111,6 +111,9 @@ class FuzzTester (Topology):
       self.core_up = True
       if self._ready_to_start():
         self.start()
+      else:
+        log.warn("Core is up, but not all required handlers (%s) are registered" %
+                  str(self._required_event_handlers))
       
     def event_handler_registered(self, event_type, handler):
       """ 
