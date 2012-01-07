@@ -20,7 +20,7 @@ sys.excepthook=Pyro4.util.excepthook
 
 log = core.getLogger()
 
-class NomServer:
+class NomServer (EventMixin):
   """
   The Nom "database". Keeps a copy of the Nom in memory, as well as a list
   of all registered clients. When a client calls NomServer.put(),
