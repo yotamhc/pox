@@ -32,9 +32,9 @@ log = core.getLogger()
 class nom_l2_switch_controller (DistributedController):
   """ Controller that treats the network as a set of learning switches """
 
-  def __init__ (self):
+  def __init__ (self, server):
     """ Initializes the l2 switch controller component """
-    DistributedController.__init__(self)
+    DistributedController.__init__(self, server)
     log.debug("nom_l2_switch_controller booting...")
    
   def _handle_topology_SwitchJoin(self, switchjoin_event):

@@ -24,6 +24,9 @@ def launch (debug=False, distributed=False):
   """
   Starts a NOM-based L2 learning switch, along with the discovery and topology modules
   """
+  if type(distributed) == bool and distributed:
+    distributed = 1
+  
   if not debug and not distributed:
     import pox.topology
     pox.topology.launch() 
@@ -31,12 +34,14 @@ def launch (debug=False, distributed=False):
     pox.openflow.discovery.launch()
     import pox.openflow.topology
     pox.openflow.topology.launch()
-
+    
   from pox.core import core
   if not distributed:
     import nom_l2_switch_controller
     core.registerNew(nom_l2_switch_controller.nom_l2_switch_controller)
   else:
+    import pox.controllers.nom_server
+    core.registerNew(pox.controllers.nom_server.NomServer)
     import distributed_nom_l2_switch_controller
     # server = Pyro4.Proxy("PYRONAME:nom_server.nom_server")
     server = core.components['NomServer'] # TODOC: for simulation, just grab a direct reference
