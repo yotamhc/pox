@@ -28,9 +28,28 @@ import time
 import random
 import os
 
-
 log = core.getLogger("debugger")
 
+class msg(): 
+  BEGIN = '\033[1;' 
+  END = '\033[1;m' 
+  
+  GRAY, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, CRIMSON = map(lambda num: str(num) + "m", range(30, 39))
+
+  @staticmethod
+  def interactive(message):
+    # todo: would be nice to simply give logger a color arg, but that doesn't exist...
+    print msg.BEGIN + msg.WHITE + message + msg.END
+  
+  @staticmethod
+  def event(message):
+    print msg.BEGIN + msg.CYAN + message + msg.END
+  
+  @staticmethod
+  def raw_input(message):
+    prompt = msg.BEGIN + msg.WHITE + message + msg.END
+    return raw_input(prompt)
+  
 class FuzzTester (Topology):
     # TODO: future feature: split this into Manager superclass and
     # simulator, emulator subclasses. Use vector clocks to take
@@ -106,6 +125,7 @@ class FuzzTester (Topology):
       #   EVERYTHING  # The user controls everything, including message ordering
       # ]  
       
+     
     def _handle_GoingUpEvent(self, going_up_event):
       log.debug("going up event!")
       self.core_up = True
@@ -154,9 +174,9 @@ class FuzzTester (Topology):
       while(self.running):
         self.logical_time += 1
         self.trigger_events()
-        print("Round %d completed." % self.logical_time)
+        msg.event("Round %d completed." % self.logical_time)
         self.invariant_check_prompt()
-        answer = raw_input('Continue to next round? [Yn]')
+        answer = msg.raw_input('Continue to next round? [Yn]')
         if answer != '' and answer.lower() != 'y':
           self.stop()
           
@@ -165,9 +185,9 @@ class FuzzTester (Topology):
         
     def stop(self):
       self.running = False
-      print "Fuzzer stopping..."
-      print "Total rounds completed: %d" % self.logical_time
-      print "Total packets sent: %d" % self.packets_sent
+      msg.event("Fuzzer stopping...")
+      msg.event("Total rounds completed: %d" % self.logical_time)
+      msg.event("Total packets sent: %d" % self.packets_sent)
       os.sys.exit()
       
     # ============================================ #
@@ -221,7 +241,7 @@ class FuzzTester (Topology):
         crashed = set()
         for switch in self.live_switches():
           if self.random.random() < self.failure_rate:
-            log.info("Crashing switch %s" % str(switch))
+            msg.event("Crashing switch %s" % str(switch))
             switch.fail()
             crashed.add(switch)
         return crashed
@@ -231,7 +251,7 @@ class FuzzTester (Topology):
           if switch in crashed_this_round:
             continue
           if self.random.random() < self.recovery_rate:
-            log.info("Rebooting switch %s" % str(switch))
+            msg.event("Rebooting switch %s" % str(switch))
             switch.recover()
 
       def cut_links():
@@ -267,7 +287,7 @@ class FuzzTester (Topology):
           # TODO: trigger more than one in a given round?
           num_relevant_event_types = len(switch._eventMixin_handlers)
           if num_relevant_event_types == 0:
-            log.debug("No registered event handlers for switch %s found" % str(switch))
+            log.warn("No registered event handlers for switch %s found" % str(switch))
             continue
           event_type = self.random.choice(switch._eventMixin_handlers.keys())
           event = self.event_generator.generate(event_type, switch)
@@ -279,15 +299,14 @@ class FuzzTester (Topology):
           handler(event) 
           
     def invariant_check_prompt(self):
-      answer = raw_input('Check Invariants? [Ny]')
+      answer = msg.raw_input('Check Invariants? [Ny]')
       if answer != '' and answer.lower() != 'n':
-          print "Which one?"
-          print "  'l' - loops"
-          print "  'b' - blackholes"
-          print "  'r' - routing consistency"
-          print "  'c' - connectivity"
-          print "  ",
-          answer = raw_input()
+          msg.interactive("Which one?")
+          msg.interactive("  'l' - loops")
+          msg.interactive("  'b' - blackholes")
+          msg.interactive("  'r' - routing consistency")
+          msg.interactive("  'c' - connectivity")
+          answer = msg.raw_input("  ")
           if answer.lower() == 'l':
             self.invariant_checker.check_loops()
           elif answer.lower() == 'b':
@@ -297,7 +316,7 @@ class FuzzTester (Topology):
           elif answer.lower() == 'c':
             self.invariant_checker.check_connectivity()
           else:
-            print "Unknown input..."
+            log.warn("Unknown input...")
           
     # TODO: do we need to define more event types? e.g., packet delivered,
     # controller crashed, etc. An alternative might be to just generate
