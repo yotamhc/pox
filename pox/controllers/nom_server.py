@@ -92,13 +92,13 @@ class NomServer:
     
     # TODO: the following code is highly redundant with controller.rb
     self.topology = None
-    if not core.resolveComponents(self, self._wantComponents):
+    if not core.listenToDependencies(self, self._wantComponents):
       # If dependencies aren't loaded, register event handlers for ComponentRegistered
       self.listenTo(core)
   
   def _handle_ComponentRegistered (self, event):
     """ Checks whether the newly registered component is one of our dependencies """
-    if core.resolveComponents(self, self._wantComponents):
+    if core.listenToDependencies(self, self._wantComponents):
       # Note that core.resolveComponents registers our event handlers with the dependencies
       # TODO: add a named field for every component in  _wantComponents
       self.topology = core.components['topology'] 
