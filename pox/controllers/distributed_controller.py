@@ -67,8 +67,9 @@ class DistributedController(EventMixin):
     log.debug("self.server %s" % self.server)
     self.server.register_client(self)
     log.debug("registered with NomServer")
-    self.nom = self.server.get()
+    self.topology = self.server.get()
     log.debug("Fetched nom from nom_server")
+    self.listenTo(self.topology, "topology")
 
   # This should really be handler for an Event defined by pox.core
   def update_nom(self, topology):
@@ -89,7 +90,7 @@ class DistributedController(EventMixin):
     log.info("Updating nom from %s to %s " % (self.topology, topology))
     self.topology = topology
     # Register subclass' event handlers
-    self.listenTo(topology)
+    self.listenTo(topology, "topology")
     # TODO: react to the change in the topology, by firing queued events to 
     # subclass' ?
     return True
