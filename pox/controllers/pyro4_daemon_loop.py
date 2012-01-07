@@ -16,6 +16,7 @@ class PyroLoop (Task):
     """
     def __init__(self, daemon, startNow=False):
         Task.__init__(self)
+        self.log = core.getLogger(str(daemon))
         
         self.daemon = daemon
         self.daemon_sockets = set(daemon.sockets)
@@ -31,9 +32,9 @@ class PyroLoop (Task):
 
     def run(self):
         while core.running:
-            print str(self.daemon), "yielding..."
+            self.log.warn("yielding...")
             rlist,_,_ = yield Select(self.daemon_sockets, [], [], 3)
-            print str(self.daemon), "events!"
+            self.log.warn("events!")
             events = []
             for read_sock in rlist:
                 if read_sock in self.daemon_sockets:
@@ -41,3 +42,4 @@ class PyroLoop (Task):
     
             if events:
                 self.daemon.events(events)
+        self.log.warn("Core not running! Task exiting")
