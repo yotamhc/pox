@@ -72,7 +72,7 @@ class DistributedController(EventMixin):
     self.listenTo(self.topology, "topology")
 
   # This should really be handler for an Event defined by pox.core
-  def update_nom(self, topology):
+  def nom_update(self, topology):
     """
     According to Scott's philosophy of SDN, a control application is a
     function: F(view) => configuration
@@ -94,3 +94,10 @@ class DistributedController(EventMixin):
     # TODO: react to the change in the topology, by firing queued events to 
     # subclass' ?
     return True
+
+  def commit_nom_change(self):
+    # Blocking operation
+    self.log.debug("Committing NOM update")
+    core.callLater(lambda: self.server.put(self.topology))
+    
+  # TODO: need to commit nom changes whenever the learning switch updates its state...

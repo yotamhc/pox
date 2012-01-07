@@ -118,7 +118,7 @@ class NomServer (EventMixin):
     self.topology = val
     for client in self.registered:
       # TODO: clone val?
-      client.update_nom(val)
+      client.nom_update(val)
       log.info("invalidating/updating %s" % client)
           
 def launch():
