@@ -36,17 +36,17 @@ class InvariantChecker():
   #                    Invariant checks                           #
   # --------------------------------------------------------------#
   def check_loops(self):
-    self._run_anteater_script(self.loop_detector, "lc-base")
+    return self._run_anteater_script(self.loop_detector, "lc-base")
     
   def check_blackholes(self):
-    self._run_anteater_script(self.blackhole_detector, "pl-base")
+    return self._run_anteater_script(self.blackhole_detector, "pl-base")
     
   def check_connectivity(self):
-    self._run_anteater_script(self.connectivity_detector, "lc-base")
+    return self._run_anteater_script(self.connectivity_detector, "lc-base")
   
   def check_routing_consistency(self):
     # TODO: this takes a list as a second parameter. I think the list might be consistency constraints
-    self._run_anteater_script(self.consistency_detector, "cfc-base")
+    return self._run_anteater_script(self.consistency_detector, "cfc-base")
     
   def _run_anteater_script(self, script, output_prefix):
     log.debug("Snapshotting FIBs...")
@@ -63,13 +63,14 @@ class InvariantChecker():
     output_reader = open("%s.result" % output_prefix, 'r')
     result = output_reader.readline().strip()
     output_reader.close()
-    log.info("Invariant check result: %s" % result)
-    if result == "sat":
-      log.debug("Cleaning up files...")
-      for extension in ["*fib", "manifest.xml", "*bc", "*result"]:
-        output_files = glob.glob(extension) 
-        for output_file in output_files:
-          os.remove(output_file)
+    log.debug("Cleaning up files...")
+    for extension in ["*fib", "manifest.xml", "*bc", "*result"]:
+      output_files = glob.glob(extension) 
+      for output_file in output_files:
+        os.remove(output_file)
+    # TODO: if not sat, help the user find the problem somehow? ;)
+    return result
+      
       
   # --------------------------------------------------------------#
   #                    FIB Snapshot                               #

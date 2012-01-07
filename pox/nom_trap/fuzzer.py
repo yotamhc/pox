@@ -35,6 +35,7 @@ class msg():
   END = '\033[1;m' 
   
   GRAY, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, CRIMSON = map(lambda num: str(num) + "m", range(30, 39))
+  B_GRAY, B_RED, B_GREEN, B_YELLOW, B_BLUE, B_MAGENTA, B_CYAN, B_WHITE, B_CRIMSON =  map(lambda num: str(num) + "m", range(40, 49)) 
 
   @staticmethod
   def interactive(message):
@@ -49,6 +50,14 @@ class msg():
   def raw_input(message):
     prompt = msg.BEGIN + msg.WHITE + message + msg.END
     return raw_input(prompt)
+  
+  @staticmethod
+  def success(message):
+    print msg.BEGIN + msg.B_GREEN + msg.BEGIN + msg.WHITE + message + msg.END
+    
+  @staticmethod
+  def fail(message):
+    print msg.BEGIN + msg.B_RED + msg.BEGIN + msg.WHITE + message + msg.END
   
 class FuzzTester (Topology):
     # TODO: future feature: split this into Manager superclass and
@@ -307,16 +316,24 @@ class FuzzTester (Topology):
           msg.interactive("  'r' - routing consistency")
           msg.interactive("  'c' - connectivity")
           answer = msg.raw_input("  ")
+          result = None
           if answer.lower() == 'l':
-            self.invariant_checker.check_loops()
+            result = self.invariant_checker.check_loops()
           elif answer.lower() == 'b':
-            self.invariant_checker.check_blackholes()
+            result = self.invariant_checker.check_blackholes()
           elif answer.lower() == 'r':
-            self.invariant_checker.check_routing_consistency()
+            result = self.invariant_checker.check_routing_consistency()
           elif answer.lower() == 'c':
-            self.invariant_checker.check_connectivity()
+            result = self.invariant_checker.check_connectivity()
           else:
             log.warn("Unknown input...")
+            
+          if not result:
+            return
+          elif result == "sat":
+            msg.success("Invariant holds!")
+          else:
+            msg.fail("Invariant violated!")
           
     # TODO: do we need to define more event types? e.g., packet delivered,
     # controller crashed, etc. An alternative might be to just generate
