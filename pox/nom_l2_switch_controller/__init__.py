@@ -26,6 +26,8 @@ def launch (debug=False, distributed=False):
   """
   if type(distributed) == bool and distributed:
     distributed = 1
+  elif type(distributed) == str:
+    distributed = int(distributed)
   
   if not debug and not distributed:
     import pox.topology
@@ -46,9 +48,10 @@ def launch (debug=False, distributed=False):
     # server = Pyro4.Proxy("PYRONAME:nom_server.nom_server")
     server = core.components['NomServer'] # TODOC: for simulation, just grab a direct reference
     # TODO: convert `distributed` to an integer
-    for _ in range(0, distributed):
+    for id in range(0, distributed):
       # TODO: no sure if I should be registering these with core
       # (name conflict, and not suitable for emulation with true distrbuted controller)
       # for now this is just to keep the controllers from being garbage collected
-      core.registerNew(distributed_nom_l2_switch_controller.nom_l2_switch_controller, server)
+      name = "l2_switch_controller#%d" % id
+      core.register(name, distributed_nom_l2_switch_controller.nom_l2_switch_controller(server, name))
       

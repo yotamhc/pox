@@ -25,20 +25,20 @@ from pox.core import core
 from pox.controllers.distributed_controller import DistributedController
 from learning_switch import LearningSwitch
 
-log = core.getLogger()
-
 # In addition to declaring the user-defined NOM entity, the application must tell the platform
 # how and when to instantiate these NOM entities. We do this with the following controller:
 class nom_l2_switch_controller (DistributedController):
   """ Controller that treats the network as a set of learning switches """
 
-  def __init__ (self, server):
+  def __init__ (self, server, name=""):
     """ Initializes the l2 switch controller component """
     DistributedController.__init__(self, server)
-    log.debug("nom_l2_switch_controller booting...")
+    self.name = name
+    self.log = core.getLogger(name)
+    self.log.debug("nom_l2_switch_controller booting...")
    
   def _handle_topology_SwitchJoin(self, switchjoin_event):
     """ Convert switches into Learning Switches """
-    log.debug("Switch Join! %s " % switchjoin_event)
+    self.log.debug("Switch Join! %s " % switchjoin_event)
     self.topology.addEntity(LearningSwitch(switchjoin_event.switch))
     
