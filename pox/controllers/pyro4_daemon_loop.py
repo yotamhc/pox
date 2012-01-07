@@ -1,7 +1,11 @@
 from pox.core import core
 import pox.openflow.libopenflow_01 as of
-from pox.lib.revent.revent import *
-from pox.lib.recoco.recoco import *
+from pox.lib.revent import *
+from pox.lib.recoco import *
+
+import Pyro4
+
+Pyro4.config.SERVERTYPE="multiplex"
 
 class PyroLoop (Task):
     """
@@ -10,16 +14,19 @@ class PyroLoop (Task):
     TODO: there should be an event loop construct in pox so that I don't
     have to deal with Select
     """
-    def __init__(self, daemon):
+    def __init__(self, daemon, startNow=False):
         Task.__init__(self)
         
         self.daemon = daemon
         self.daemon_sockets = set(daemon.sockets)
         
         # When core goes up, make sure to schedule ourselves
-        core.addListener(pox.core.GoingUpEvent, self.start)
+        if startNow:
+            self.start()
+        else:
+            core.addListener(pox.core.GoingUpEvent, self.start)
 
-    def start(self, event):
+    def start(self, event=None):
         Task.start(self)
 
     def run(self):
@@ -32,4 +39,3 @@ class PyroLoop (Task):
     
             if events:
                 self.daemon.events(events)
-

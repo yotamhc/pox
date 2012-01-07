@@ -3,7 +3,8 @@
 
 from pox.core import core
 import pox.openflow.libopenflow_01 as of
-from pox.lib.revent.revent import *
+from pox.lib.revent import *
+from pox.lib.recoco import *
 
 from pox.controllers.pyro4_daemon_loop import PyroLoop
 from pox.controllers.cached_nom import CachedNom
@@ -12,9 +13,7 @@ import Pyro4
 import Pyro4.util
 import sys
 import signal
-import subprocess
 import socket
-
 
 sys.excepthook=Pyro4.util.excepthook
 
@@ -44,14 +43,8 @@ class NomServer (EventMixin):
   _wantComponents = set(['topology'])
   
   def __init__(self):
-    def fork_name_server():
-      """
-      Fork a python process to run the name server
-      
-      NOTE: to avoid having to fork every time you run pox, open a
-      separate terminal and run:
-        $ python -m Pyro4.naming
-      """
+    def spawn_name_server():
+      """ Spawn the Pyro4 name server if necessary """
       def name_server_already_running():
         """check if the pyro4 name server is already running"""
         log.info("checking if name server is already running...")
@@ -67,13 +60,10 @@ class NomServer (EventMixin):
 
       if not name_server_already_running():
         log.info("booting name server...")
+        _, nameserverDaemon, _ = Pyro4.naming.startNS()
+        PyroLoop(nameserverDaemon, startNow=True)
 
-        subprocess.Popen(
-          "python -m Pyro4.naming",
-          shell=True,
-        )
-
-    fork_name_server()
+    spawn_name_server()
 
     # Clients call server.get() for their reference to the CachedNom
     # The CachedNom's reference to the NomServer should be 
@@ -82,27 +72,35 @@ class NomServer (EventMixin):
     # don't wait for a response from `put` calls
     server_proxy._pyroOneway.add("put")
     self.registered = []
-
+    
+    # Boot up ourselves as a Pyro4 daemon
     daemon = Pyro4.Daemon()
     self.uri = daemon.register(self)
-    # register with name server
-    ns = Pyro4.naming.locateNS()
-    ns.register("nom_server.nom_server", self.uri)
     PyroLoop(daemon)
+
+    def register_with_ns():
+      ns = Pyro4.naming.locateNS()
+      ns.register("nom_server.nom_server", self.uri)
+      
+    # register_with_ns() is a blocking operation, so schedule it as a task
+    core.callLater(register_with_ns)
     
     # TODO: the following code is highly redundant with controller.rb
     self.topology = None
     if not core.listenToDependencies(self, self._wantComponents):
       # If dependencies aren't loaded, register event handlers for ComponentRegistered
       self.listenTo(core)
+    else:
+      self._finish_initialization() 
   
   def _handle_ComponentRegistered (self, event):
     """ Checks whether the newly registered component is one of our dependencies """
     if core.listenToDependencies(self, self._wantComponents):
-      # Note that core.resolveComponents registers our event handlers with the dependencies
-      # TODO: add a named field for every component in  _wantComponents
-      self.topology = core.components['topology'] 
+        self._finish_initialization() 
 
+  def _finish_initialization(self):
+      self.topology = core.components['topology'] 
+      
   def register_client(self, client):
     log.info("register %s" % client.uri)
     client = Pyro4.Proxy(client.uri)
