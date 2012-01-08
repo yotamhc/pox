@@ -223,6 +223,11 @@ cli = True
 verbose = False
 enable_openflow = True
 debug = False
+deadlock = False
+
+def _opt_deadlock(v):
+  global deadlock
+  deadlock = str(v).lower() != "true"
 
 def _opt_no_openflow (v):
   global enable_openflow
@@ -244,6 +249,8 @@ def _opt_debug (v):
     # debug implies no openflow 
     _opt_no_openflow(True)
     _opt_no_cli(True)
+    
+    
 def process_options ():
   for k,v in options.iteritems():
     rk = '_opt_' + k.replace("-", "_")
@@ -338,11 +345,24 @@ def main ():
     code.interact('Ready.', local=l)
   else:
     try:
+      import traceback
       import time
+      import sys
+      import inspect
+      
       while True:
+        if globals()['options']['deadlock']:
+          frames = sys._current_frames()
+          for key in frames:
+            frame = frames[key]
+            print inspect.getframeinfo(frame)
+            outer_frames = inspect.getouterframes(frame)
+            for i in range(0, len(outer_frames)): 
+              print "     " + str(inspect.getframeinfo(outer_frames[i][0]))
+
         time.sleep(5)
     except:
-      pass
+      traceback.print_exc(file=sys.stdout)
     #core.scheduler._thread.join() # Sleazy
 
   try:
