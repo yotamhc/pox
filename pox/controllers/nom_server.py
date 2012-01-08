@@ -9,7 +9,8 @@ from pox.lib.recoco import *
 from pox.controllers.pyro4_daemon_loop import PyroLoop
 from pox.controllers.cached_nom import CachedNom
 
-import pox.lib.pyro as Pyro4
+from pox.lib.pyro import Daemon, Proxy
+import pox.lib.pyro.naming as pyro4_naming
 import pox.lib.pyro.util as pyro_util
 import sys
 import signal
@@ -60,30 +61,20 @@ class NomServer (EventMixin):
 
       if not name_server_already_running():
         log.info("booting name server...")
-        _, nameserverDaemon, _ = Pyro4.naming.startNS()
-        PyroLoop(nameserverDaemon, startNow=True)
+        _, nameserverDaemon, _ = pyro4_naming.startNS()
+        PyroLoop(nameserverDaemon, name="pyro_loop:name_server", startNow=True)
 
     spawn_name_server()
 
-    # Clients call server.get() for their reference to the CachedNom
-    # The CachedNom's reference to the NomServer should be 
-    # a Proxy, not the full object (`self`)
-    server_proxy = Pyro4.Proxy("PYRONAME:nom_server.nom_server")
-    # don't wait for a response from `put` calls
-    server_proxy._pyroOneway.add("put")
     self.registered = []
     
     # Boot up ourselves as a Pyro4 daemon
-    daemon = Pyro4.Daemon()
+    daemon = Daemon()
     self.uri = daemon.register(self)
-    PyroLoop(daemon)
+    PyroLoop(daemon, name="pyroloop:nom_server")
 
-    def register_with_ns():
-      ns = Pyro4.naming.locateNS()
-      ns.register("nom_server.nom_server", self.uri)
-      
-    # register_with_ns() is a blocking operation, so schedule it as a task
-    core.callLater(register_with_ns)
+    ns = pyro4_naming.locateNS()
+    ns.register(name="nom_server.nom_server", uri=str(self.uri))
     
     # TODO: the following code is highly redundant with controller.rb
     self.topology = None
@@ -101,10 +92,11 @@ class NomServer (EventMixin):
   def _finish_initialization(self):
       self.topology = core.components['topology'] 
       
-  def register_client(self, client):
-    log.info("register %s" % client.uri)
-    client = Pyro4.Proxy(client.uri)
-    self.registered.append(client)
+  def register_client(self, client_uri):
+    log.info("register %s" % client_uri)
+    client_proxy = Proxy(client_uri)
+    client_proxy._pyroOneway.add("nom_update")
+    self.registered.append(client_proxy)
 
   def unregister_client(self, client):
     pass
@@ -118,7 +110,7 @@ class NomServer (EventMixin):
     self.topology = val
     for client in self.registered:
       # TODO: clone val?
-      client.nom_update(val)
+      #client.nom_update(val)
       log.info("invalidating/updating %s" % client)
           
 def launch():

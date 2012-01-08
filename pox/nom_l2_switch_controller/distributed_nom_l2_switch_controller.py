@@ -29,9 +29,9 @@ from learning_switch import LearningSwitch
 class nom_l2_switch_controller (DistributedController):
   """ Controller that treats the network as a set of learning switches """
 
-  def __init__ (self, server, name=""):
+  def __init__ (self, name=""):
     """ Initializes the l2 switch controller component """
-    DistributedController.__init__(self, server, name)
+    DistributedController.__init__(self, name)
     self.log.debug("nom_l2_switch_controller booting...")
    
   def _handle_topology_SwitchJoin(self, switchjoin_event):

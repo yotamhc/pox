@@ -13,9 +13,12 @@ class PyroLoop (Task):
     TODO: there should be an event loop construct in pox so that I don't
     have to deal with Select
     """
-    def __init__(self, daemon, startNow=False):
+    def __init__(self, daemon, name=None, startNow=False):
         Task.__init__(self)
-        self.log = core.getLogger(str(daemon))
+        if not name:
+          name = str(daemon)
+          
+        self.log = core.getLogger(str(name))
         
         self.daemon = daemon
         self.daemon_sockets = set(daemon.sockets)

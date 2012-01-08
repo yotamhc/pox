@@ -22,8 +22,9 @@ import threading
 import signal
 import time
 
-import pox.lib.pyro
+import pox.lib.pyro as pyro
 import pox.lib.pyro.util as pyro_util
+import pox.lib.pyro.naming as pyro_naming
 
 sys.excepthook=pyro_util.excepthook
 
@@ -46,28 +47,37 @@ class DistributedController(EventMixin):
   |                        |   <-------------------     |                        |
   ==========================                            ==========================
   """
-  def __init__(self, server, name):
+  def __init__(self, name):
     """
     Note that server may be a direct reference to the NomServer (for simulation), or a Pyro4 proxy
     (for emulation)
     """
-    self.server = server
     self.name = name
     self.log = core.getLogger(name)
     self.topology = None
-    daemon = pox.lib.pyro.core.Daemon()
+    daemon = pyro.Daemon()
     self.uri = daemon.register(self)
-    PyroLoop(daemon)
+    PyroLoop(daemon, name="pyroloop:"+self.name)
+    
+    self._server_proxy = None
+    self._queued_commits = []
     
     # Can't register with server until Core is up (TODO: since...)
     # pre: core isn't already up
     core.addListener(UpEvent, self._register_with_server)
 
   def _register_with_server(self, event):
-    self.log.debug("self.server %s" % self.server)
-    self.server.register_client(self)
+    # TODO: Blocking operation...
+    server_uri = pyro_naming.resolve("PYRONAME:nom_server.nom_server")
+    print server_uri
+    print type(server_uri)
+    self._server_proxy = pyro.Proxy(server_uri)
+    # don't wait for a response from `put` calls
+    self._server_proxy._pyroOneway.add("put")
+    self.log.debug("self.server %s" % str(self._server_proxy))
+    self._server_proxy.register_client(str(self.uri))
     self.log.debug("registered with NomServer")
-    self.topology = self.server.get()
+    self.topology = self._server_proxy.get()
     self.log.debug("Fetched nom from nom_server")
     self.listenTo(self.topology, "topology")
 
@@ -96,8 +106,11 @@ class DistributedController(EventMixin):
     return True
 
   def commit_nom_change(self):
-    # Blocking operation
     self.log.debug("Committing NOM update")
-    core.callLater(lambda: self.server.put(self.topology))
+    if core._server_proxy:
+      # Blocking operation
+      core.callLater(lambda:  self._server_proxy.put(self.topology))
+    else:
+      self._queued_commits.append(self.topology)
     
   # TODO: need to commit nom changes whenever the learning switch updates its state...

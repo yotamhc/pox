@@ -46,12 +46,12 @@ def launch (debug=False, distributed=False):
     core.registerNew(pox.controllers.nom_server.NomServer)
     import distributed_nom_l2_switch_controller
     # server = Pyro4.Proxy("PYRONAME:nom_server.nom_server")
-    server = core.components['NomServer'] # TODOC: for simulation, just grab a direct reference
+    #server = core.components['NomServer'] # TODOC: for simulation, just grab a direct reference
     # TODO: convert `distributed` to an integer
     for id in range(0, distributed):
       # TODO: no sure if I should be registering these with core
       # (name conflict, and not suitable for emulation with true distrbuted controller)
       # for now this is just to keep the controllers from being garbage collected
       name = "controller#%d" % id
-      core.register(name, distributed_nom_l2_switch_controller.nom_l2_switch_controller(server, name))
+      core.register(name, distributed_nom_l2_switch_controller.nom_l2_switch_controller(name))
       
