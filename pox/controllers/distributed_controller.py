@@ -22,7 +22,7 @@ import threading
 import signal
 import time
 
-import pox.lib.pyro as Pyro4
+import pox.lib.pyro
 import pox.lib.pyro.util as pyro_util
 
 sys.excepthook=pyro_util.excepthook
@@ -55,7 +55,7 @@ class DistributedController(EventMixin):
     self.name = name
     self.log = core.getLogger(name)
     self.topology = None
-    daemon = Pyro4.Daemon()
+    daemon = pox.lib.pyro.core.Daemon()
     self.uri = daemon.register(self)
     PyroLoop(daemon)
     

@@ -5,9 +5,9 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 import socket, select, sys, logging, os
-import pox.lib.pyro as Pyro4
-import pox.lib.pyro.socketutil as socketutil
-import pox.lib.pyro.errors as errors
+import pox.lib.pyro
+import pox.lib.pyro.socketutil 
+import pox.lib.pyro.errors
 
 log=logging.getLogger("Pyro.socketserver.multiplexed")
 
@@ -18,7 +18,7 @@ class MultiplexedSocketServerBase(object):
         log.info("starting multiplexed socketserver")
         self.sock=None
         bind_location=unixsocket if unixsocket else (host, port)
-        self.sock=socketutil.createSocket(bind=bind_location, reuseaddr=Pyro4.config.SOCK_REUSE, timeout=Pyro4.config.COMMTIMEOUT, noinherit=True)
+        self.sock= pox.lib.pyro.socketutil.createSocket(bind=bind_location, reuseaddr=pox.lib.pyro.config.SOCK_REUSE, timeout=pox.lib.pyro.config.COMMTIMEOUT, noinherit=True)
         self.clients=[]
         self.daemon=daemon
         sockaddr=self.sock.getsockname()
@@ -52,7 +52,7 @@ class MultiplexedSocketServerBase(object):
                 # must be client socket, means remote call
                 try:
                     self.daemon.handleRequest(s)
-                except (socket.error, errors.ConnectionClosedError, errors.SecurityError):
+                except (socket.error, pox.lib.pyro.errors.ConnectionClosedError, pox.lib.pyro.errors.SecurityError):
                     # client went away or caused a security error
                     s.close()
                     if s in self.clients:
@@ -63,24 +63,24 @@ class MultiplexedSocketServerBase(object):
             if sock is None:
                 return
             csock, caddr = sock.accept()
-            if Pyro4.config.COMMTIMEOUT:
-                csock.settimeout(Pyro4.config.COMMTIMEOUT)
+            if pox.lib.pyro.config.COMMTIMEOUT:
+                csock.settimeout(pox.lib.pyro.config.COMMTIMEOUT)
         except socket.error:
             x=sys.exc_info()[1]
             err=getattr(x, "errno", x.args[0])
-            if err in socketutil.ERRNO_RETRIES:
+            if err in  pox.lib.pyro.socketutil.ERRNO_RETRIES:
                 # just ignore this error for now and continue
                 log.warn("accept() failed errno=%d, shouldn't happen", err)
                 return None
-            if err in socketutil.ERRNO_BADF or err in socketutil.ERRNO_ENOTSOCK:
+            if err in pox.lib.pyro.socketutil.ERRNO_BADF or err in pox.lib.pyro.socketutil.ERRNO_ENOTSOCK:
                 # our server socket got destroyed
-                raise errors.ConnectionClosedError("server socket closed")
+                raise pox.lib.pyro.errors.ConnectionClosedError("server socket closed")
             raise
         try:
-            conn=socketutil.SocketConnection(csock)
+            conn=pox.lib.pyro.socketutil.SocketConnection(csock)
             if self.daemon._handshake(conn):
                 return conn
-        except (socket.error, errors.PyroError):
+        except (socket.error, pox.lib.pyro.errors.PyroError):
             x=sys.exc_info()[1]
             log.warn("error during connect: %s", x)
             csock.close()
@@ -135,13 +135,13 @@ class SocketServer_Poll(MultiplexedSocketServerBase):
             poll.register(self.sock.fileno(), select.POLLIN | select.POLLPRI)
             fileno2connection[self.sock.fileno()]=self.sock
             while loopCondition():
-                polls=poll.poll(1000*Pyro4.config.POLLTIMEOUT)
+                polls=poll.poll(1000*pox.lib.pyro.config.POLLTIMEOUT)
                 for (fd, mask) in polls:
                     conn=fileno2connection[fd]
                     if conn is self.sock:
                         try:
                             conn=self._handleConnection(self.sock)
-                        except errors.ConnectionClosedError:
+                        except pox.lib.pyro.errors.ConnectionClosedError:
                             log.info("server socket was closed, stopping requestloop")
                             return
                         if conn:
@@ -150,7 +150,7 @@ class SocketServer_Poll(MultiplexedSocketServerBase):
                     else:
                         try:
                             self.daemon.handleRequest(conn)
-                        except (socket.error, errors.ConnectionClosedError, errors.SecurityError):
+                        except (socket.error, pox.lib.pyro.errors.ConnectionClosedError, pox.lib.pyro.errors.SecurityError):
                             # client went away or caused a security error
                             try:
                                 fn=conn.fileno()
@@ -180,7 +180,7 @@ class SocketServer_Select(MultiplexedSocketServerBase):
                 rlist=self.clients[:]
                 rlist.append(self.sock)
                 try:
-                    rlist, _, _=select.select(rlist, [], [], Pyro4.config.POLLTIMEOUT)
+                    rlist, _, _=select.select(rlist, [], [], pox.lib.pyro.config.POLLTIMEOUT)
                 except select.error:
                     if loopCondition():
                         raise
@@ -197,7 +197,7 @@ class SocketServer_Select(MultiplexedSocketServerBase):
                         conn=self._handleConnection(self.sock)
                         if conn:
                             self.clients.append(conn)
-                    except errors.ConnectionClosedError:
+                    except pox.lib.pyro.errors.ConnectionClosedError:
                         log.info("server socket was closed, stopping requestloop")
                         return
                 for conn in rlist[:]:
@@ -205,7 +205,7 @@ class SocketServer_Select(MultiplexedSocketServerBase):
                         rlist.remove(conn)
                         try:
                             self.daemon.handleRequest(conn)
-                        except (socket.error, errors.ConnectionClosedError, errors.SecurityError):
+                        except (socket.error, pox.lib.pyro.errors.ConnectionClosedError, pox.lib.pyro.errors.SecurityError):
                             # client went away or caused a security error
                             conn.close()
                             if conn in self.clients:

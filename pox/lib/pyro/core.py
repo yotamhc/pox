@@ -13,14 +13,13 @@ try:
     import copyreg
 except ImportError:
     import copy_reg as copyreg
-import constants as constants
-import threadutil as threadutil
-import util as util
-import socketutil as socketutil
-import errors as errors
-from socketserver.threadpoolserver import SocketServer_Threadpool
+import constants
+import threadutil
+import util
+import socketutil
+import errors
 from socketserver.multiplexserver import SocketServer_Select, SocketServer_Poll
-import pox.lib.pyro as Pyro4
+from pox.lib.pyro import config
 
 __all__=["URI", "Proxy", "Daemon", "callback", "batch", "async", "Future"]
 
@@ -59,7 +58,7 @@ class URI(object):
         self.object=match.group("object")
         location=match.group("location")
         if self.protocol=="PYRONAME":
-            self._parseLocation(location, Pyro4.config.NS_PORT)
+            self._parseLocation(location, config.NS_PORT)
             return
         if self.protocol=="PYRO":
             if not location:
@@ -147,10 +146,10 @@ class _RemoteMethod(object):
 
 
 def _check_hmac():
-    if Pyro4.config.HMAC_KEY is None or len(Pyro4.config.HMAC_KEY)==0:
+    if config.HMAC_KEY is None or len(config.HMAC_KEY)==0:
         import warnings
         warnings.warn("HMAC_KEY not set, protocol data may not be secure")
-    elif sys.version_info>=(3,0) and type(Pyro4.config.HMAC_KEY) is not bytes:
+    elif sys.version_info>=(3,0) and type(config.HMAC_KEY) is not bytes:
         raise errors.PyroError("HMAC_KEY must be bytes type")
 
 
@@ -181,7 +180,7 @@ class Proxy(object):
         self._pyroConnection=None
         self._pyroOneway=set()
         self._pyroSeq=0    # message sequence number
-        self.__pyroTimeout=Pyro4.config.COMMTIMEOUT
+        self.__pyroTimeout=config.COMMTIMEOUT
         self.__pyroLock=threadutil.Lock()
 
     def __del__(self):
@@ -250,7 +249,7 @@ class Proxy(object):
             self.__pyroCreateConnection()
         data, compressed=self._pyroSerializer.serialize(
             (self._pyroConnection.objectId, methodname, vargs, kwargs),
-            compress=Pyro4.config.COMPRESSION)
+            compress=config.COMPRESSION)
         if compressed:
             flags |= MessageFactory.FLAGS_COMPRESSED
         if methodname in self._pyroOneway:
@@ -299,7 +298,7 @@ class Proxy(object):
         connect_location=uri.sockname if uri.sockname else (uri.host, uri.port)
         try:
             with self.__pyroLock:
-                sock=socketutil.createSocket(connect=connect_location, reuseaddr=Pyro4.config.SOCK_REUSE, timeout=self.__pyroTimeout)
+                sock=socketutil.createSocket(connect=connect_location, reuseaddr=config.SOCK_REUSE, timeout=self.__pyroTimeout)
                 conn=socketutil.SocketConnection(sock, uri.object)
                 # Do handshake. For now, no need to send anything.
                 msgType, flags, seq, data = MessageFactory.getMessage(conn, None)
@@ -627,9 +626,9 @@ class MessageFactory(object):
     def createMessage(cls, msgType, databytes, flags, seq):
         """creates a message containing a header followed by the given databytes"""
         databytes=databytes or cls.empty_bytes
-        if Pyro4.config.HMAC_KEY:
+        if config.HMAC_KEY:
             flags|=MessageFactory.FLAGS_HMAC
-            bodyhmac=hmac.new(Pyro4.config.HMAC_KEY, databytes, digestmod=hashlib.sha1).digest()
+            bodyhmac=hmac.new(config.HMAC_KEY, databytes, digestmod=hashlib.sha1).digest()
         else:
             bodyhmac=MessageFactory.empty_hmac
         headerchecksum=(msgType+constants.PROTOCOL_VERSION+len(databytes)+flags+seq+MessageFactory.MAGIC)&0xffff
@@ -657,9 +656,9 @@ class MessageFactory(object):
             log.error(err)
             raise errors.ProtocolError(err)
         databytes=connection.recv(datalen)
-        local_hmac_set=Pyro4.config.HMAC_KEY is not None and len(Pyro4.config.HMAC_KEY) > 0
+        local_hmac_set=config.HMAC_KEY is not None and len(config.HMAC_KEY) > 0
         if flags&MessageFactory.FLAGS_HMAC and local_hmac_set:
-            if datahmac != hmac.new(Pyro4.config.HMAC_KEY, databytes, digestmod=hashlib.sha1).digest():
+            if datahmac != hmac.new(config.HMAC_KEY, databytes, digestmod=hashlib.sha1).digest():
                 raise errors.SecurityError("message hmac mismatch")
         elif flags&MessageFactory.FLAGS_HMAC != local_hmac_set:
             # Message contains hmac and local HMAC_KEY not set, or vice versa. This is not allowed.
@@ -674,7 +673,7 @@ def pyroObjectSerializer(self):
     daemon=getattr(self,"_pyroDaemon",None)
     if daemon:
         # only return a proxy if the object is a registered pyro object
-        return Pyro4.core.Proxy, (daemon.uriFor(self),)
+        return Proxy, (daemon.uriFor(self),)
     else:
         return self.__reduce__()
 
@@ -706,20 +705,15 @@ class Daemon(object):
     def __init__(self, host=None, port=0, unixsocket=None):
         _check_hmac()  # check if hmac secret key is set
         if host is None:
-            host=Pyro4.config.HOST
-        if Pyro4.config.SERVERTYPE=="thread":
-            self.transportServer=SocketServer_Threadpool()
-        elif Pyro4.config.SERVERTYPE=="multiplex":
-            # choose the 'best' multiplexing implementation
-            if os.name=="java":
-                raise NotImplementedError("select or poll-based server is not supported for jython, use thread server instead")
-            import select
-            if hasattr(select,"poll"):
-                self.transportServer=SocketServer_Poll()
-            else:
-                self.transportServer=SocketServer_Select()
+            host=config.HOST
+        # choose the 'best' multiplexing implementation
+        if os.name=="java":
+          raise NotImplementedError("select or poll-based server is not supported for jython, use thread server instead")
+        import select
+        if hasattr(select,"poll"):
+          self.transportServer=SocketServer_Poll()
         else:
-            raise errors.PyroError("invalid server type '%s'" % Pyro4.config.SERVERTYPE)
+          self.transportServer=SocketServer_Select()
         self.transportServer.init(self, host, port, unixsocket)
         self.locationStr=self.transportServer.locationStr
         log.debug("created daemon on %s", self.locationStr)
@@ -751,7 +745,7 @@ class Daemon(object):
             daemon=Daemon()
         with daemon:
             if ns:
-                ns=Pyro4.naming.locateNS()
+                ns=naming.locateNS()
             for obj, name in objects.items():
                 if ns:
                     localname=None   # name is used for the name server
@@ -835,13 +829,13 @@ class Daemon(object):
                     # batched method calls, loop over them all and collect all results
                     data=[]
                     for method,vargs,kwargs in vargs:
-                        method=util.resolveDottedAttribute(obj, method, Pyro4.config.DOTTEDNAMES)
+                        method=util.resolveDottedAttribute(obj, method, config.DOTTEDNAMES)
                         try:
                             result=method(*vargs, **kwargs)   # this is the actual method call to the Pyro object
                         except Exception:
                             xt,xv=sys.exc_info()[0:2]
                             log.debug("Exception occurred while handling batched request: %s", xv)
-                            xv._pyroTraceback=util.formatTraceback(detailed=Pyro4.config.DETAILED_TRACEBACK)
+                            xv._pyroTraceback=util.formatTraceback(detailed=config.DETAILED_TRACEBACK)
                             if sys.platform=="cli":
                                 fixIronPythonExceptionForPickle(xv, True)  # piggyback attributes
                             data.append(_ExceptionWrapper(xv))
@@ -851,8 +845,8 @@ class Daemon(object):
                     wasBatched=True
                 else:
                     # normal single method call
-                    method=util.resolveDottedAttribute(obj, method, Pyro4.config.DOTTEDNAMES)
-                    if flags & MessageFactory.FLAGS_ONEWAY and Pyro4.config.ONEWAY_THREADED:
+                    method=util.resolveDottedAttribute(obj, method, config.DOTTEDNAMES)
+                    if flags & MessageFactory.FLAGS_ONEWAY and config.ONEWAY_THREADED:
                         # oneway call to be run inside its own thread
                         thread=threadutil.Thread(target=method, args=vargs, kwargs=kwargs)
                         thread.setDaemon(True)
@@ -866,7 +860,7 @@ class Daemon(object):
             if flags & MessageFactory.FLAGS_ONEWAY:
                 return   # oneway call, don't send a response
             else:
-                data, compressed=self.serializer.serialize(data, compress=Pyro4.config.COMPRESSION)
+                data, compressed=self.serializer.serialize(data, compress=config.COMPRESSION)
                 flags=0
                 if compressed:
                     flags |= MessageFactory.FLAGS_COMPRESSED
@@ -880,7 +874,7 @@ class Daemon(object):
             log.debug("Exception occurred while handling request: %r", xv)
             if not flags & MessageFactory.FLAGS_ONEWAY:
                 # only return the error to the client if it wasn't a oneway call
-                tblines=util.formatTraceback(detailed=Pyro4.config.DETAILED_TRACEBACK)
+                tblines=util.formatTraceback(detailed=config.DETAILED_TRACEBACK)
                 self._sendExceptionResponse(conn, seq, xv, tblines)
             if isCallback or isinstance(xv, (errors.CommunicationError, errors.SecurityError)):
                 raise       # re-raise if flagged as callback, communication or security error.
@@ -913,7 +907,7 @@ class Daemon(object):
         # set some pyro attributes
         obj._pyroId=objectId
         obj._pyroDaemon=self
-        if Pyro4.config.AUTOPROXY:
+        if config.AUTOPROXY:
             # register a custom serializer for the type to automatically return proxies
             try:
                 copyreg.pickle(type(obj),pyroObjectSerializer)
@@ -1019,3 +1013,6 @@ def callback(object):
     """
     object._pyroCallback=True
     return object
+
+
+import naming

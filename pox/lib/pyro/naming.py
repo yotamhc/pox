@@ -6,10 +6,11 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 from __future__ import with_statement
 import re, logging, socket, sys
-import constants, core, socketutil
+import constants, core, socketutil, errors
 from threadutil import RLock, Thread
 from errors import PyroError, NamingError
-import pox.lib.pyro as Pyro4
+from pox.lib.pyro import config
+from pox.lib.pyro.core import Daemon
 
 __all__=["locateNS", "resolve", "startNS"]
 
@@ -105,15 +106,15 @@ class NameServer(object):
         pass
 
 
-class NameServerDaemon(core.Daemon):
+class NameServerDaemon(Daemon):
     """Daemon that contains the Name Server."""
     def __init__(self, host=None, port=None, unixsocket=None):
-        if Pyro4.config.DOTTEDNAMES:
+        if config.DOTTEDNAMES:
             raise PyroError("Name server won't start with DOTTEDNAMES enabled because of security reasons")
         if host is None:
-            host=Pyro4.config.HOST
+            host=config.HOST
         if port is None:
-            port=Pyro4.config.NS_PORT
+            port=config.NS_PORT
         super(NameServerDaemon, self).__init__(host, port, unixsocket)
         self.nameserver=NameServer()
         self.register(self.nameserver, constants.NAMESERVER_NAME)
@@ -143,10 +144,10 @@ class BroadcastServer(object):
     def __init__(self, nsUri, bchost=None, bcport=None):
         self.nsUri=nsUri
         if bcport is None:
-            bcport=Pyro4.config.NS_BCPORT
+            bcport=config.NS_BCPORT
         if bchost is None:
-            bchost=Pyro4.config.NS_BCHOST
-        self.sock=Pyro4.socketutil.createBroadcastSocket((bchost, bcport), reuseaddr=Pyro4.config.SOCK_REUSE, timeout=2.0)
+            bchost=config.NS_BCHOST
+        self.sock=socketutil.createBroadcastSocket((bchost, bcport), reuseaddr=config.SOCK_REUSE, timeout=2.0)
         self._sockaddr=self.sock.getsockname()
         bchost=bchost or self._sockaddr[0]
         bcport=bcport or self._sockaddr[1]
@@ -253,8 +254,8 @@ def locateNS(host=None, port=None):
     """Get a proxy for a name server somewhere in the network."""
     if host is None:
         # first try localhost if we have a good chance of finding it there
-        if Pyro4.config.NS_HOST=="localhost" or Pyro4.config.NS_HOST.startswith("127."):
-            uristring="PYRO:%s@%s:%d" % (constants.NAMESERVER_NAME, Pyro4.config.NS_HOST, port or Pyro4.config.NS_PORT)
+        if config.NS_HOST=="localhost" or config.NS_HOST.startswith("127."):
+            uristring="PYRO:%s@%s:%d" % (constants.NAMESERVER_NAME, config.NS_HOST, port or config.NS_PORT)
             log.debug("locating the NS: %s", uristring)
             proxy=core.Proxy(uristring)
             try:
@@ -265,9 +266,9 @@ def locateNS(host=None, port=None):
                 pass
         # broadcast lookup
         if not port:
-            port=Pyro4.config.NS_BCPORT
+            port=config.NS_BCPORT
         log.debug("broadcast locate")
-        sock=Pyro4.socketutil.createBroadcastSocket(reuseaddr=Pyro4.config.SOCK_REUSE, timeout=0.7)
+        sock=socketutil.createBroadcastSocket(reuseaddr=config.SOCK_REUSE, timeout=0.7)
         for _ in range(3):
             try:
                 sock.sendto(BroadcastServer.REQUEST_NSURI, 0, ("<broadcast>", port))
@@ -282,11 +283,11 @@ def locateNS(host=None, port=None):
         sock.close()
         log.debug("broadcast locate failed, try direct connection on NS_HOST")
         # broadcast failed, try PYRO directly on specific host
-        host=Pyro4.config.NS_HOST
-        port=Pyro4.config.NS_PORT
+        host=config.NS_HOST
+        port=config.NS_PORT
     # pyro direct lookup
     if not port:
-        port=Pyro4.config.NS_PORT
+        port=config.NS_PORT
     if core.URI.isUnixsockLocation(host):
         uristring="PYRO:%s@%s" % (constants.NAMESERVER_NAME, host)
     else:
@@ -299,7 +300,7 @@ def locateNS(host=None, port=None):
         log.debug("located NS")
         return proxy
     except PyroError:
-        raise Pyro4.errors.NamingError("Failed to locate the nameserver")
+        raise errors.NamingError("Failed to locate the nameserver")
 
 
 def resolve(uri):
