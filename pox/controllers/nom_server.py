@@ -9,13 +9,13 @@ from pox.lib.recoco import *
 from pox.controllers.pyro4_daemon_loop import PyroLoop
 from pox.controllers.cached_nom import CachedNom
 
-import Pyro4
-import Pyro4.util
+import pox.lib.pyro as Pyro4
+import pox.lib.pyro.util as pyro_util
 import sys
 import signal
 import socket
 
-sys.excepthook=Pyro4.util.excepthook
+sys.excepthook=pyro_util.excepthook
 
 log = core.getLogger("nom_server")
 

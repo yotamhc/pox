@@ -3,8 +3,7 @@ import pox.openflow.libopenflow_01 as of
 from pox.lib.revent import *
 from pox.lib.recoco import *
 
-import Pyro4
-
+import pox.lib.pyro as Pyro4
 Pyro4.config.SERVERTYPE="multiplex"
 
 class PyroLoop (Task):

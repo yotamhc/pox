@@ -22,10 +22,10 @@ import threading
 import signal
 import time
 
-import Pyro4
-import Pyro4.util
+import pox.lib.pyro as Pyro4
+import pox.lib.pyro.util as pyro_util
 
-sys.excepthook=Pyro4.util.excepthook
+sys.excepthook=pyro_util.excepthook
 
 class DistributedController(EventMixin):
   """
