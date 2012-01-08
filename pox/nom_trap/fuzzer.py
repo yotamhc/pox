@@ -173,28 +173,31 @@ class FuzzTester (Topology):
       Start the fuzzer loop!
       """
       log.debug("Starting fuzz loop")
-      self.loop()
        
-    def loop(self):
-      self.logical_time += 1
-      self.trigger_events()
-      msg.event("Round %d completed." % self.logical_time)
-      # TODO: print out the state of the network at each timestep? Take a
-      # verbose flag..
-      self.invariant_check_prompt()
-      answer = msg.raw_input('Continue to next round? [Yn]').strip()
-      if answer != '' and answer.lower() != 'y':
-        self.stop()
-      else:
-        # Schedule ourselves to loop again
-        core.callLater(self.loop)
+      # Not that this hijacks the main() thread, but does not stop other
+      # recoco tasks from running. There are four threads in the POX system:
+      #  - pox.openflow.of_01.DeferredSender  (rarely used)
+      #  - pox.lib.recoco.Scheduler (runs recoco Tasks, e.g. of_01.Task)
+      #  - pox.lib.recoco.SelectHub (should really be merged with recoco.Scheduler)
+      #  - pox.py (hijacked by us)
+      while True:
+        self.logical_time += 1
+        self.trigger_events()
+        msg.event("Round %d completed." % self.logical_time)
+        # TODO: print out the state of the network at each timestep? Take a
+        # verbose flag..
+        self.invariant_check_prompt()
+        answer = msg.raw_input('Continue to next round? [Yn]').strip()
+        if answer != '' and answer.lower() != 'y':
+          self.stop()
+          return
           
     def stop(self):
       self.running = False
       msg.event("Fuzzer stopping...")
       msg.event("Total rounds completed: %d" % self.logical_time)
       msg.event("Total packets sent: %d" % self.packets_sent)
-      os.sys.exit()
+      #os.sys.exit()
       
     # ============================================ #
     #     Bookkeeping methods                      #
