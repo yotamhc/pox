@@ -12,10 +12,10 @@ try:
     import queue
 except ImportError:
     import Queue as queue
-import pox.lib.pyro
-import pox.lib.pyro.socketutil
-import pox.lib.pyro.threadutil
-import pox.lib.pyro.errors
+import pox.lib.pyro as Pyro4
+import pox.lib.pyro.socketutil as socketutil
+import pox.lib.pyro.threadutil as threadutil
+import pox.lib.pyro.errors as errors
 
 log=logging.getLogger("Pyro.socketserver.threadpool")
 

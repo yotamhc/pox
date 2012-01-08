@@ -6,7 +6,8 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 from __future__ import with_statement
 import time
-import threadutil
+import threadutil as threadutil
+from pox.lib.pyro import config
 
 
 class ThreadPool(object):
@@ -24,7 +25,7 @@ class ThreadPool(object):
     Maybe I'll refactor this thing in the future.
     """
     def __init__(self):
-        self.lock = Pyro4.threadutil.Lock()
+        self.lock = threadutil.Lock()
         self.pool = set()
         self.workerFactory=None   # you must set this after creation
         self.__working = 0
@@ -38,7 +39,7 @@ class ThreadPool(object):
 
     def fill(self):
         """pre-fill the pool with workers"""
-        for _ in range(Pyro4.config.THREADPOOL_MINTHREADS):
+        for _ in range(config.THREADPOOL_MINTHREADS):
             if not self.attemptSpawn():
                 break
 
@@ -53,7 +54,7 @@ class ThreadPool(object):
         Returns True if it was removed, False otherwise.
         """
         with self.lock:
-            if len(self.pool) > Pyro4.config.THREADPOOL_MINTHREADS:
+            if len(self.pool) > config.THREADPOOL_MINTHREADS:
                 self.pool.remove(member)
                 return True
             return False
@@ -73,7 +74,7 @@ class ThreadPool(object):
         Returns True if a worker spawned, False if the pool is already full.
         """
         with self.lock:
-            if len(self.pool) < Pyro4.config.THREADPOOL_MAXTHREADS:
+            if len(self.pool) < config.THREADPOOL_MAXTHREADS:
                 worker = self.workerFactory()
                 self.pool.add(worker)
                 worker.start()
@@ -100,10 +101,10 @@ class ThreadPool(object):
         """Cleans up the pool: any excess idle workers are removed. Returns the number of removed workers."""
         threads = len(self.pool)
         shrunk = 0
-        if threads > Pyro4.config.THREADPOOL_MINTHREADS:
+        if threads > config.THREADPOOL_MINTHREADS:
             idle = threads - self.__working
-            if idle > Pyro4.config.THREADPOOL_MINTHREADS and (time.time() - self.__lastshrink) > Pyro4.config.THREADPOOL_IDLETIMEOUT:
-                shrunk = idle - Pyro4.config.THREADPOOL_MINTHREADS
+            if idle > config.THREADPOOL_MINTHREADS and (time.time() - self.__lastshrink) > config.THREADPOOL_IDLETIMEOUT:
+                shrunk = idle - config.THREADPOOL_MINTHREADS
                 # XXX hmm, something should actually remove the idle threads from the pool here ..... instead of depending on the user to do it....
                 self.__lastshrink = time.time()
         return shrunk

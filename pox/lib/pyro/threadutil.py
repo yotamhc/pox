@@ -8,7 +8,7 @@ the same (but it is not required).
 Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
-import config
+from pox.lib.pyro import config
 
 if config.THREADING2:
     try:

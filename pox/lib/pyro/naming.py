@@ -9,7 +9,7 @@ import re, logging, socket, sys
 import constants, core, socketutil
 from threadutil import RLock, Thread
 from errors import PyroError, NamingError
-import pox.lib.pyro
+import pox.lib.pyro as Pyro4
 
 __all__=["locateNS", "resolve", "startNS"]
 

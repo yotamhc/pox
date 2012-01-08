@@ -13,10 +13,14 @@ try:
     import copyreg
 except ImportError:
     import copy_reg as copyreg
-import constants, threadutil, util, socketutil, errors
+import constants as constants
+import threadutil as threadutil
+import util as util
+import socketutil as socketutil
+import errors as errors
 from socketserver.threadpoolserver import SocketServer_Threadpool
 from socketserver.multiplexserver import SocketServer_Select, SocketServer_Poll
-import pox.lib.pyro
+import pox.lib.pyro as Pyro4
 
 __all__=["URI", "Proxy", "Daemon", "callback", "batch", "async", "Future"]
 

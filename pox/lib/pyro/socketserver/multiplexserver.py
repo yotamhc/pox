@@ -5,9 +5,9 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 """
 
 import socket, select, sys, logging, os
-import pox.lib.pyro
-import pox.lib.pyro.socketutil
-import pox.lib.pyro.errors
+import pox.lib.pyro as Pyro4
+import pox.lib.pyro.socketutil as socketutil
+import pox.lib.pyro.errors as errors
 
 log=logging.getLogger("Pyro.socketserver.multiplexed")
 

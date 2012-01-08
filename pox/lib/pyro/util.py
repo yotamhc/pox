@@ -6,7 +6,7 @@ Pyro - Python Remote Objects.  Copyright by Irmen de Jong (irmen@razorvine.net).
 
 import sys, zlib, logging
 import traceback, linecache
-import pox.lib.pyro
+from pox.lib.pyro import config
 
 log=logging.getLogger("Pyro.util")
 
@@ -36,7 +36,7 @@ def getPyroTraceback(ex_type=None, ex_value=None, ex_tb=None):
             ex_type, ex_value, ex_tb=sys.exc_info()
 
         remote_tb=getattr(ex_value, "_pyroTraceback", None)
-        local_tb=formatTraceback(ex_type, ex_value, ex_tb, Pyro4.config.DETAILED_TRACEBACK)
+        local_tb=formatTraceback(ex_type, ex_value, ex_tb, config.DETAILED_TRACEBACK)
         if remote_tb:
             remote_tb=formatRemoteTraceback(remote_tb)
             return local_tb + remote_tb
