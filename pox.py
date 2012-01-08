@@ -362,7 +362,8 @@ def main ():
 
         time.sleep(5)
     except:
-      traceback.print_exc(file=sys.stdout)
+      if globals()['options']['deadlock']:
+        traceback.print_exc(file=sys.stdout)
     #core.scheduler._thread.join() # Sleazy
 
   try:
