@@ -351,7 +351,7 @@ def main ():
       import inspect
       
       while True:
-        if globals()['options']['deadlock']:
+        if 'deadlock' in globals()['options'] and globals()['options']['deadlock']:
           frames = sys._current_frames()
           for key in frames:
             frame = frames[key]
@@ -362,7 +362,7 @@ def main ():
 
         time.sleep(5)
     except:
-      if globals()['options']['deadlock']:
+      if 'deadlock' in globals()['options'] and globals()['options']['deadlock']:
         traceback.print_exc(file=sys.stdout)
     #core.scheduler._thread.join() # Sleazy
 
