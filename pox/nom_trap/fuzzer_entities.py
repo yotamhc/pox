@@ -79,9 +79,10 @@ class MockOpenFlowSwitch (OpenFlowSwitch):
   NOTE: /not/ a mock switch implementation, only a mock NOM entity.
         For the mock switch implementation we use pox.openflow.switch_impl
   """
-  def __init__ (self, dpid, ofp_phy_ports):
+  def __init__ (self, dpid, ofp_phy_ports, parent_controller_name):
     OpenFlowSwitch.__init__(self, dpid)
     self.failed = False
+    self.parent_controller_name = parent_controller_name
     # Instantiate the Switch Implementation here. We don't use self.switch_impl
     # to communicate directly with the switch, rather, we go through a Connection
     # object as in the normal OpenFlowSwitch implementation.
@@ -131,7 +132,7 @@ class MockOpenFlowSwitch (OpenFlowSwitch):
       self.log.warn("Switch already up")
     self.failed = False
     self.connect(self.switch_impl)
-    
+  
 class Link():
   """
   Temporary stand in for Murphy's graph-library for the NOM.

@@ -140,11 +140,12 @@ class FuzzTester (EventMixin):
         self.start()
       else:
         log.debug("Core is up, but not all controllers registered. Waiting..")
-        self.topology.addListener(Update, self._handle_topology_update)
+        self.update_listener = self.topology.addListener(Update, self._handle_topology_update)
         
     def _handle_topology_update(self, update_event):
       log.debug("update event. checking if we're ready...")
       if self._ready_to_start():
+        self.topology.removeListener(self.update_listener)
         self.start()
           
     def _ready_to_start(self):
@@ -165,8 +166,6 @@ class FuzzTester (EventMixin):
       # TODO: allow the user to specify a topology
       # The next line should cause the client to register additional
       # handlers on switch entities
-      
-      # TODO: populate is currently permanently blocked
       default_topology.populate(self.topology)
        
       # Not that this hijacks the main() thread, but does not stop other
@@ -329,7 +328,12 @@ class FuzzTester (EventMixin):
             msg.success("Invariant holds!")
           else:
             msg.fail("Invariant violated!")
-
+            
+    def serialize(self):
+      serializable = self.topology.serialize()
+      log.error(str(serializable))
+      return serializable
+            
     def __getattr__( self, name ):
       """
       Delegate unknown attributes to fuzzer (we just interpose)

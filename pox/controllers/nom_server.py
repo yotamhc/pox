@@ -35,6 +35,8 @@ class NomServer (EventMixin):
   ==========================                            ==========================
   """
   
+  _core_name = name
+  
   # The set of components we depend on. These must be loaded before we can begin.
   _wantComponents = set(['topology'])
   
@@ -83,9 +85,11 @@ class NomServer (EventMixin):
         log.debug("- goodbye!")
         event.con.close()
       if "get" in r:
-        self.get(event.con)
+        pass
+        #self.get(event.con)
       if "put" in r:
-        self.put(r["put"]) 
+        pass
+        #self.put(r["put"]) 
     else:
       log.debug("- conversation finished")
   
@@ -106,8 +110,8 @@ class NomServer (EventMixin):
 
   def get(self, conn):
     log.info("get")
-    conn.send({"nom_update":self.topology})
-
+    conn.send({"nom_update":self.topology.serialize()}) #, default=lambda obj: obj.serialize)
+    
   def put(self, val):
     log.info("put %s" % val)
     self.topology = val

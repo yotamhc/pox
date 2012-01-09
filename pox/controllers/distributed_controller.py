@@ -52,8 +52,10 @@ class DistributedController(EventMixin, topology.Controller):
     topology.Controller.__init__(self, name)
     self.name = name
     self.log = core.getLogger(name)
-    self.topology = None
-    
+    # To be populated later
+    self.topology = topology.Topology()
+    self.nom_update(self.topology)
+        
     self._server_connection = None
     self._queued_commits = []
     
@@ -110,7 +112,8 @@ class DistributedController(EventMixin, topology.Controller):
   def commit_nom_change(self):
     self.log.debug("Committing NOM update")
     if self._server_connection:
-      self._server_connection.send({"put":self.topology})
+      pass
+      #self._server_connection.send({"put":self.topology})
     else:
       self.log.debug("Queuing nom commit")
       self._queued_commits.append(copy.deepcopy(self.topology))

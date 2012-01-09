@@ -20,10 +20,44 @@ TODO: should this topology include Hosts as well?
 
 from pox.nom_trap.fuzzer_entities import *
 from pox.openflow.libopenflow_01 import ofp_phy_port
+import pox.topology.topology as topology
+from pox.controllers.distributed_controller import DistributedController
 from socket import *
+
+class Cycler():
+  """
+  Abstraction for cycling through the given list circularly:
+  
+  c = Cycler([1,2,3])
+  while True:
+    print c.next()
+  """
+  def __init__(self, arr):
+    self._list = list(arr)
+    self._current_index = 0 
+    
+  def next(self):
+    if len(self._list) == 0:
+      return None
+    
+    element = self._list[self._current_index]
+    self._current_index += 1
+    self._current_index %= len(self._list)
+    return element
 
 def populate(topology, num_switches=3):
   # TODO: Do we need to simulate (designate) a port to the controller?
+  # TODO: use only topology Controllers for emulation (have switches connect directly rather than
+  #       creating an [unserializable] socket here)
+  #controllers = Cycler(topology.getEntitiesOfType(topology.Controller))
+  
+  # HACK: For simulation, get a direct reference to the controllers via core.components, and
+  #       inject the MockOpenFlowSwitch objects directly into the controller's cached NOM
+  controllers = []
+  for name in core.components.keys():
+    if name.find("controller") != -1:
+      controllers.append(core.components[name])
+  controllers = Cycler(controllers)
   
   # Every switch has a link to every other switch, for N*(N-1) total ports
   ports_per_switch = num_switches - 1
@@ -52,10 +86,18 @@ def populate(topology, num_switches=3):
       ports_for_switch.append(ofp_port)
       
     # Instantiate NOM Switch (which instantiates the SwitchImpl)
-    switch = MockOpenFlowSwitch(switch_num, ports_for_switch)
+    parent_controller = controllers.next()
+    switch = MockOpenFlowSwitch(switch_num, ports_for_switch, parent_controller.name)
+    
     # HACK: externally define a new field in SwitchImpl
     #       port -> Link
     switch.switch_impl.outgoing_links = {}
+    
+    # HACK: insert the MockOpenFlowSwitch directly into controller's NOM. We'll also
+    # add a copy to the master NOM here.
+    if isinstance(parent_controller, DistributedController):
+      parent_controller.topology.addEntity(switch)
+      
     switches.append(switch)
     
   if len(switches) != num_switches:
@@ -91,8 +133,8 @@ def populate(topology, num_switches=3):
       other_switch_impl.outgoing_links[neighbor_port] = other2switch
       
   if len(connected_ports) != total_ports:
-    raise AssertionError("len(connected_ports != total_ports. Was %d. Connected ports: %s" % (len(connected_ports), str(connected_ports)))
+    raise AssertionError("len(connected_ports != total_ports). Was %d. Connected ports: %s" % (len(connected_ports), str(connected_ports)))
       
-  # Now add switches to Topology
+  # Now add switches to the master Topology copy
   for switch in switches:
     topology.addEntity(switch)
