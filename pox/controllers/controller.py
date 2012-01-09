@@ -19,13 +19,16 @@ from pox.core import core
 import pox.topology.topology as topology
 from pox.lib.revent import *
 
-log = core.getLogger()
+name = "controller"
+log = core.getLogger(name)
 
 class Controller (EventMixin, topology.Controller):
   """
   Generic Controller Application Superclass. Loads up topology and
   registers subclasse's handlers with topology et al.
   """
+  
+  _core_name = name
   
   # The set of components we depend on. These must be loaded before we can begin.
   _wantComponents = set(['topology'])
@@ -37,6 +40,8 @@ class Controller (EventMixin, topology.Controller):
     if not core.listenToDependencies(self, self._wantComponents):
       # If dependencies aren't fully loaded, register event handlers for ComponentRegistered
       self.listenTo(core)
+    else:
+      core.topology.addEntity(self)
   
   def _handle_ComponentRegistered (self, event):
     """ Checks whether the newly registered component is one of our dependencies """

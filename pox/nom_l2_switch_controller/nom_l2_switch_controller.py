@@ -25,13 +25,16 @@ from pox.core import core
 from pox.controllers.controller import Controller
 from learning_switch import LearningSwitch
 
-log = core.getLogger("controller")
+name = "l2_controller"
+log = core.getLogger(name)
 
 # In addition to declaring the user-defined NOM entity, the application must tell the platform
 # how and when to instantiate these NOM entities. We do this with the following controller:
 class nom_l2_switch_controller (Controller):
   """ Controller that treats the network as a set of learning switches """
 
+  _core_name = name
+  
   def __init__ (self):
     """ Initializes the l2 switch controller component """
     Controller.__init__(self)
