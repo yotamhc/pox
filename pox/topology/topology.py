@@ -33,6 +33,7 @@ log = core.getLogger()
 
 class EntityEvent (Event):
   def __init__ (self, entity):
+    Event.__init__(self)
     self.entity = entity
     
 class EntityJoin (EntityEvent):
@@ -67,6 +68,7 @@ class SwitchJoin (SwitchEvent):
   (e.g. an administrator physically moving a switch).
   """
   def __init__ (self, switch):
+    SwitchEvent.__init__(self, switch)
     self.switch = switch
     
 class SwitchLeave (SwitchEvent):
@@ -219,6 +221,9 @@ class Topology (EventMixin):
     if type(event) is not Update:
       EventMixin.raiseEvent(self, Update(event))
     return rv
+  
+  def serialize (self):
+    return self.__dict__
 
   def _fulfill_SwitchJoin_promise(self, handler):
     """ Trigger the SwitchJoin handler for all pre-existing switches """
