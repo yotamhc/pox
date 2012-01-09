@@ -59,10 +59,16 @@ class msg():
   def fail(message):
     print msg.BEGIN + msg.B_RED + msg.BEGIN + msg.WHITE + message + msg.END
   
-class FuzzTester (Topology):
+class FuzzTester (EventMixin):
     # TODO: future feature: split this into Manager superclass and
     # simulator, emulator subclasses. Use vector clocks to take
     # consistent snapshots of emulated network
+    
+    _eventMixin_events = Topology._eventMixin_events
+    
+    # We're masquarading as core.topology
+    _core_name = "topology"
+    
     """
     This is part of a testing framework for controller applications. It 
     acts as a replacement for pox.topology.
@@ -71,10 +77,16 @@ class FuzzTester (Topology):
     it will inject intelligently chosen mock events (and observe
     their responses?)
     """
-    def __init__(self):
-      Topology.__init__(self)
+    def __init__(self, num_controllers):
+      self.num_controllers = num_controllers
+      
       self.listenTo(core)
       self.core_up = False
+      
+      self.topology = Topology()
+      # Re-throw any events raised by topology
+      for event in self._eventMixin_events:
+        self.topology.addListener(event, lambda event, *args, **kw: self.raiseEvent(event, *args, **kw))
       
       # List of the event handlers we are waiting before starting the fuzzer
       # loop. Values of the dict will be set to the event handler.
@@ -95,12 +107,7 @@ class FuzzTester (Topology):
       self.logical_time = 0
       # TODO: take a timestep parameter for how long
       # each logical timestep should last?
-      
-      # TODO: allow the user to specify a topology
-      # The next line should cause the client to register additional
-      # handlers on switch entities
-      default_topology.populate(self)
-      
+           
       # events for this round
       self.sorted_events = []
       self.in_transit_messages = set()
@@ -173,6 +180,11 @@ class FuzzTester (Topology):
       Start the fuzzer loop!
       """
       log.debug("Starting fuzz loop")
+      
+      # TODO: allow the user to specify a topology
+      # The next line should cause the client to register additional
+      # handlers on switch entities
+      default_topology.populate(self.topology, self.controllers)
        
       # Not that this hijacks the main() thread, but does not stop other
       # recoco tasks from running. There are four threads in the POX system:
@@ -197,14 +209,14 @@ class FuzzTester (Topology):
       msg.event("Fuzzer stopping...")
       msg.event("Total rounds completed: %d" % self.logical_time)
       msg.event("Total packets sent: %d" % self.packets_sent)
-      #os.sys.exit()
+      os.sys.exit()
       
     # ============================================ #
     #     Bookkeeping methods                      #
     # ============================================ #
     def all_switches(self):
       """ Return all switches currently registered """
-      return self.getEntitiesOfType(MockOpenFlowSwitch)
+      return self.topology.getEntitiesOfType(MockOpenFlowSwitch)
     
     def crashed_switches(self):
       """ Return the switches which are currently down """
@@ -334,10 +346,17 @@ class FuzzTester (Topology):
             msg.success("Invariant holds!")
           else:
             msg.fail("Invariant violated!")
-          
+            
+    def __getattr__( self, name ):
+      """
+      Delegate unknown attributes to fuzzer (we just interpose)
+      """
+      return getattr( self.topology, name )
+       
     # TODO: do we need to define more event types? e.g., packet delivered,
     # controller crashed, etc. An alternative might be to just generate
     # sensible traffic, and let the switch raise its own events.
+       
        
 if __name__ == "__main__":
   pass

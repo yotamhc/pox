@@ -1,4 +1,4 @@
-def launch ():
-  import nom_trap
+def launch (num_controllers=1):
+  import fuzzer
   from pox.core import core
-  core.registerNew(nom_trap.NomTrap)
+  core.registerNew(fuzzer.FuzzTester, num_controllers)
