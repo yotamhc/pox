@@ -109,6 +109,9 @@ class Entity (object):
   def __init__ (self):
     Entity._next_id += 1
     self.id = Entity._next_id
+    
+  def serialize(self):
+    return self
 
 class Host (Entity):
   """
@@ -223,7 +226,11 @@ class Topology (EventMixin):
     return rv
   
   def serialize (self):
-    return self.__dict__
+    id2entity = {}
+    for id in self._entities:
+      entity = self._entities[id]
+      id2entity[id] = entity.serialize()
+    return id2entity
 
   def _fulfill_SwitchJoin_promise(self, handler):
     """ Trigger the SwitchJoin handler for all pre-existing switches """
