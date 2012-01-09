@@ -136,6 +136,13 @@ class Port (Entity):
     self.number = num
     self.hwAddr = EthAddr(hwAddr)
     self.name = name
+    
+class Controller (Entity):
+  def __init__(self, name):
+    self.id = name
+    # TODO: python aliases?
+    self.name = name
+  
 
 class Topology (EventMixin):
   _eventMixin_events = [
