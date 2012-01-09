@@ -34,7 +34,6 @@ class Controller (EventMixin, topology.Controller):
     EventMixin.__init__(self)
     topology.Controller.__init__(self, "controller")
     
-    self.topology = None
     if not core.listenToDependencies(self, self._wantComponents):
       # If dependencies aren't fully loaded, register event handlers for ComponentRegistered
       self.listenTo(core)
