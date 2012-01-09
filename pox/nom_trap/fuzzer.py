@@ -85,12 +85,6 @@ class FuzzTester (EventMixin):
       
       self.topology = Topology()
       
-      # List of the event handlers we are waiting before starting the fuzzer
-      # loop. Values of the dict will be set to the event handler.
-      self._required_event_handlers = {
-        SwitchJoin : None,
-      }
-     
       self.running = False
       
       # TODO: make it easier for client to tweak these
@@ -145,26 +139,18 @@ class FuzzTester (EventMixin):
       if self._ready_to_start():
         self.start()
       else:
-        log.warn("Core is up, but not all required handlers (%s) are registered" %
-                  str(self._required_event_handlers))
-      
-    def event_handler_registered(self, event_type, handler):
-      """ 
-      A client just registered an event handler on us
-      
-      TODO: I'm pretty sure we're going to need a reference to the client
-      itself, not just its handler
-      """
-      log.debug("event handler registered %s %s" % (str(event_type), str(handler)))
-      
-      if event_type in self._required_event_handlers:
-        self._required_event_handlers[event_type] = handler
+        log.warn("Core is up, but not all controllers registered")
+        core.callLater(self._wait_to_start)
         
+    def _wait_to_start(self):
       if self._ready_to_start():
         self.start()
-      
+      else:
+        log.debug("Waiting to start...")
+        core.callLater(self._wait_to_start)
+          
     def _ready_to_start(self):
-      if None in self._required_event_handlers.values():
+      if len(self.topology.getEntitiesOfType(Controller, True)) < self.num_controllers:
         return False
       
       if not self.core_up:
@@ -181,7 +167,7 @@ class FuzzTester (EventMixin):
       # TODO: allow the user to specify a topology
       # The next line should cause the client to register additional
       # handlers on switch entities
-      default_topology.populate(self.topology, self.controllers)
+      default_topology.populate(self.topology)
        
       # Not that this hijacks the main() thread, but does not stop other
       # recoco tasks from running. There are four threads in the POX system:
