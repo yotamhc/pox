@@ -11,10 +11,9 @@
 #  $ pox.py nom_server nom_client    # works
 
 from pox.core import core, UpEvent
-import pox.openflow.libopenflow_01 as of
-from pox.lib.revent.revent import *
-from pox.lib.recoco.recoco import *
+from pox.lib.revent.revent import EventMixin
 import pox.messenger.messenger as messenger
+import pox.topology.topology as topology
 
 import sys
 import threading
@@ -23,7 +22,7 @@ import time
 import copy
 import socket
 
-class DistributedController(EventMixin):
+class DistributedController(EventMixin, topology.Controller):
   """
   Keeps a copy of the Nom in its cache. Arbitrary controller applications
   can be implemented on top of NomClient through inheritance. Mutating calls to 
@@ -49,6 +48,8 @@ class DistributedController(EventMixin):
     
     pre: name is unique across the network
     """
+    EventMixin.__init__(self)
+    topology.Controller.__init__(self, name)
     self.name = name
     self.log = core.getLogger(name)
     self.topology = None

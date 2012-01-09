@@ -16,14 +16,12 @@
 # along with POX.  If not, see <http://www.gnu.org/licenses/>.
 
 from pox.core import core
-import pox.openflow.libopenflow_01 as of
-from pox.openflow import PacketIn
-from pox.topology.topology import Switch, Entity
+import pox.topology.topology as topology
 from pox.lib.revent import *
 
 log = core.getLogger()
 
-class Controller (EventMixin):
+class Controller (EventMixin, topology.Controller):
   """
   Generic Controller Application Superclass. Loads up topology and
   registers subclasse's handlers with topology et al.
@@ -33,6 +31,9 @@ class Controller (EventMixin):
   _wantComponents = set(['topology'])
   
   def __init__(self):
+    EventMixin.__init__(self)
+    topology.Controller.__init__(self, "controller")
+    
     self.topology = None
     if not core.listenToDependencies(self, self._wantComponents):
       # If dependencies aren't fully loaded, register event handlers for ComponentRegistered
@@ -41,5 +42,6 @@ class Controller (EventMixin):
   def _handle_ComponentRegistered (self, event):
     """ Checks whether the newly registered component is one of our dependencies """
     if core.listenToDependencies(self, self._wantComponents):
+      core.topology.addEntity(self)
       return EventRemove
   
