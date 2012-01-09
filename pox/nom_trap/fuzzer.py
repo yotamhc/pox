@@ -84,9 +84,6 @@ class FuzzTester (EventMixin):
       self.core_up = False
       
       self.topology = Topology()
-      # Re-throw any events raised by topology
-      for event in self._eventMixin_events:
-        self.topology.addListener(event, lambda event, *args, **kw: self.raiseEvent(event, *args, **kw))
       
       # List of the event handlers we are waiting before starting the fuzzer
       # loop. Values of the dict will be set to the event handler.
@@ -346,7 +343,7 @@ class FuzzTester (EventMixin):
             msg.success("Invariant holds!")
           else:
             msg.fail("Invariant violated!")
-            
+
     def __getattr__( self, name ):
       """
       Delegate unknown attributes to fuzzer (we just interpose)
