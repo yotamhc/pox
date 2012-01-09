@@ -6,6 +6,7 @@ import pox.openflow.libopenflow_01 as of
 from pox.lib.revent import *
 from pox.lib.recoco import *
 from pox.messenger.messenger import *
+import pox.topology.topology as topology
 
 import sys
 import signal
@@ -60,8 +61,11 @@ class NomServer (EventMixin):
         event.con.read() # Consume the message
         event.claim()
         event.con.addListener(MessageReceived, self._handle_MessageReceived, weak=True)
-        self.register_client(msg['nom_server_handshake'], event.con)
-        log.debug("- started conversation with %s" % str(msg['nom_server_handshake']))
+        controller_name = msg['nom_server_handshake']
+        self.register_client(controller_name, event.con)
+        # TODO: can we assume that topology is booted?
+        self.topology.addEntity(topology.Controller(controller_name))
+        log.debug("- started conversation with %s" % controller_name)
       else:
         log.debug("- ignoring")
     except:

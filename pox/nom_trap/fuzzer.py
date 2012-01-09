@@ -139,15 +139,13 @@ class FuzzTester (EventMixin):
       if self._ready_to_start():
         self.start()
       else:
-        log.warn("Core is up, but not all controllers registered")
-        core.callLater(self._wait_to_start)
+        log.debug("Core is up, but not all controllers registered. Waiting..")
+        self.topology.addListener(Update, self._handle_topology_update)
         
-    def _wait_to_start(self):
+    def _handle_topology_update(self, update_event):
+      log.debug("update event. checking if we're ready...")
       if self._ready_to_start():
         self.start()
-      else:
-        log.debug("Waiting to start...")
-        core.callLater(self._wait_to_start)
           
     def _ready_to_start(self):
       if len(self.topology.getEntitiesOfType(Controller, True)) < self.num_controllers:
@@ -167,6 +165,8 @@ class FuzzTester (EventMixin):
       # TODO: allow the user to specify a topology
       # The next line should cause the client to register additional
       # handlers on switch entities
+      
+      # TODO: populate is currently permanently blocked
       default_topology.populate(self.topology)
        
       # Not that this hijacks the main() thread, but does not stop other

@@ -62,6 +62,7 @@ class DistributedController(EventMixin, topology.Controller):
     core.messenger.addListener(messenger.MessengerListening, self._register_with_server)
     
   def _register_with_server(self, event):
+    self.log.debug("Attempting to register with NomServer")
     sock = socket.socket()
     # TODO: don't assume localhost -> should point to machine NomServer is running on
     sock.connect(("localhost",7790))
