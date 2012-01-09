@@ -5,20 +5,14 @@ from pox.core import core
 import pox.openflow.libopenflow_01 as of
 from pox.lib.revent import *
 from pox.lib.recoco import *
+from pox.messenger.messenger import *
 
-from pox.controllers.pyro4_daemon_loop import PyroLoop
-from pox.controllers.cached_nom import CachedNom
-
-from pox.lib.pyro import Daemon, Proxy
-import pox.lib.pyro.naming as pyro4_naming
-import pox.lib.pyro.util as pyro_util
 import sys
 import signal
 import socket
 
-sys.excepthook=pyro_util.excepthook
-
-log = core.getLogger("nom_server")
+name = "nom_server"
+log = core.getLogger(name)
 
 class NomServer (EventMixin):
   """
@@ -44,37 +38,12 @@ class NomServer (EventMixin):
   _wantComponents = set(['topology'])
   
   def __init__(self):
-    def spawn_name_server():
-      """ Spawn the Pyro4 name server if necessary """
-      def name_server_already_running():
-        """check if the pyro4 name server is already running"""
-        log.info("checking if name server is already running...")
-        s = socket.socket()
-        name_server_hostname = "localhost"
-        name_server_port = 9090
-        try:
-          s.connect((name_server_hostname, name_server_port)) 
-          return True
-        except Exception, e:
-          log.warn("name_server already running? exception: %s" % e)
-          return False
-
-      if not name_server_already_running():
-        log.info("booting name server...")
-        _, nameserverDaemon, _ = pyro4_naming.startNS()
-        PyroLoop(nameserverDaemon, name="pyro_loop:name_server", startNow=True)
-
-    spawn_name_server()
-
-    self.registered = []
+    # Pre: core.messenger is registered
+    # Wait for connections
+    core.messenger.addListener(MessageReceived, self._handle_global_MessageReceived, weak=True)
     
-    # Boot up ourselves as a Pyro4 daemon
-    daemon = Daemon()
-    self.uri = daemon.register(self)
-    PyroLoop(daemon, name="pyroloop:nom_server")
-
-    ns = pyro4_naming.locateNS()
-    ns.register(name="nom_server.nom_server", uri=str(self.uri))
+    # client name -> TCPMessageConnection
+    self.registered = {}
     
     # TODO: the following code is highly redundant with controller.rb
     self.topology = None
@@ -84,35 +53,71 @@ class NomServer (EventMixin):
     else:
       self._finish_initialization() 
   
+  def _handle_global_MessageReceived (self, event, msg):
+    try:
+      if 'nom_server_handshake' in msg:
+        # It's for me! Store the connection object. Their name is the value
+        event.con.read() # Consume the message
+        event.claim()
+        event.con.addListener(MessageReceived, self._handle_MessageReceived, weak=True)
+        self.register_client(msg['nom_server_handshake'], event.con)
+        log.debug("- started conversation with %s" % str(msg['nom_server_handshake']))
+      else:
+        log.debug("- ignoring")
+    except:
+      pass
+    
+  def _handle_MessageReceived (self, event, msg):
+    if event.con.isReadable():
+      r = event.con.read()
+      log.debug("-%s" % str(r))
+      if type(r) is not dict:
+        log.warn("message was not a dict!")
+        return
+      
+      if r.get("bye",False):
+        log.debug("- goodbye!")
+        event.con.close()
+      if "get" in r:
+        self.get(event.con)
+      if "put" in r:
+        self.put(r["put"]) 
+    else:
+      log.debug("- conversation finished")
+  
   def _handle_ComponentRegistered (self, event):
     """ Checks whether the newly registered component is one of our dependencies """
     if core.listenToDependencies(self, self._wantComponents):
         self._finish_initialization() 
 
   def _finish_initialization(self):
-      self.topology = core.components['topology'] 
+    self.topology = core.components['topology'] 
       
-  def register_client(self, client_uri):
-    log.info("register %s" % client_uri)
-    client_proxy = Proxy(client_uri)
-    client_proxy._pyroOneway.add("nom_update")
-    self.registered.append(client_proxy)
+  def register_client(self, client_name, connection):
+    log.info("register %s" % client_name)
+    self.registered[client_name] = connection
 
   def unregister_client(self, client):
     pass
 
-  def get(self):
+  def get(self, conn):
     log.info("get")
-    return self.topology
+    conn.send({"nom_update":self.topology})
 
   def put(self, val):
     log.info("put %s" % val)
     self.topology = val
-    for client in self.registered:
-      # TODO: clone val?
-      #client.nom_update(val)
-      log.info("invalidating/updating %s" % client)
+    for client_name in self.registered.keys():
+      log.info("invalidating/updating %s" % client_name)
+      connection = self.registered[client_name]
+      connection.send({"nom_update":self.topology})
+      
           
 def launch():
+  import pox.messenger.messenger as messenger
+  # TODO: don't assume localhost:7790 for emulation
+  messenger.launch()
   from pox.core import core
   core.registerNew(NomServer)
+  
+  

@@ -14,19 +14,14 @@ from pox.core import core, UpEvent
 import pox.openflow.libopenflow_01 as of
 from pox.lib.revent.revent import *
 from pox.lib.recoco.recoco import *
-
-from pox.controllers.pyro4_daemon_loop import PyroLoop
+import pox.messenger.messenger as messenger
 
 import sys
 import threading
 import signal
 import time
-
-import pox.lib.pyro as pyro
-import pox.lib.pyro.util as pyro_util
-import pox.lib.pyro.naming as pyro_naming
-
-sys.excepthook=pyro_util.excepthook
+import copy
+import socket
 
 class DistributedController(EventMixin):
   """
@@ -51,37 +46,42 @@ class DistributedController(EventMixin):
     """
     Note that server may be a direct reference to the NomServer (for simulation), or a Pyro4 proxy
     (for emulation)
+    
+    pre: name is unique across the network
     """
     self.name = name
     self.log = core.getLogger(name)
     self.topology = None
-    daemon = pyro.Daemon()
-    self.uri = daemon.register(self)
-    PyroLoop(daemon, name="pyroloop:"+self.name)
     
-    self._server_proxy = None
+    self._server_connection = None
     self._queued_commits = []
     
-    # Can't register with server until Core is up (TODO: since...)
-    # pre: core isn't already up
-    core.addListener(UpEvent, self._register_with_server)
-
+    # For simulation. can't connect to NomServer until the Messenger is listening to new connections
+    # TODO: for emulation, this should be removed / refactored -- just assume that the NomServer machine is up
+    core.messenger.addListener(messenger.MessengerListening, self._register_with_server)
+    
   def _register_with_server(self, event):
-    # TODO: Blocking operation...
-    server_uri = pyro_naming.resolve("PYRONAME:nom_server.nom_server")
-    print server_uri
-    print type(server_uri)
-    self._server_proxy = pyro.Proxy(server_uri)
-    # don't wait for a response from `put` calls
-    self._server_proxy._pyroOneway.add("put")
-    self.log.debug("self.server %s" % str(self._server_proxy))
-    self._server_proxy.register_client(str(self.uri))
-    self.log.debug("registered with NomServer")
-    self.topology = self._server_proxy.get()
-    self.log.debug("Fetched nom from nom_server")
-    self.listenTo(self.topology, "topology")
+    sock = socket.socket()
+    # TODO: don't assume localhost -> should point to machine NomServer is running on
+    sock.connect(("localhost",7790))
+    self._server_connection = messenger.TCPMessengerConnection(socket = sock)
+    self._server_connection.addListener(messenger.MessageReceived, self._handle_MessageReceived)
+    self._server_connection.send({"nom_server_handshake":self.name})
+    # Answer comes back asynchronously as a call to nom_update
+    self._server_connection.send({"get":None})
+    
+  def _handle_MessageReceived (self, event, msg):
+    if event.con.isreadable():
+      r = event.con.read()
+      self.log.debug("-%s" % str(r))
+      if type(r) is not dict:
+        self.log.warn("message was not a dict!")
+        return
+      if "nom_update" in r:
+        self.nom_update(r["nom_update"])
+    else:
+      self.log.debug("- conversation finished")
 
-  # This should really be handler for an Event defined by pox.core
   def nom_update(self, topology):
     """
     According to Scott's philosophy of SDN, a control application is a
@@ -107,10 +107,11 @@ class DistributedController(EventMixin):
 
   def commit_nom_change(self):
     self.log.debug("Committing NOM update")
-    if core._server_proxy:
-      # Blocking operation
-      core.callLater(lambda:  self._server_proxy.put(self.topology))
+    if self._server_connection:
+      self._server_connection.send({"put":self.topology})
     else:
-      self._queued_commits.append(self.topology)
+      self.log.debug("Queuing nom commit")
+      self._queued_commits.append(copy.deepcopy(self.topology))
     
-  # TODO: need to commit nom changes whenever the learning switch updates its state...
+    # TODO: need to commit nom changes whenever the learning switch updates its state...
+  

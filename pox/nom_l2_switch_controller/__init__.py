@@ -42,8 +42,9 @@ def launch (debug=False, distributed=False):
     import nom_l2_switch_controller
     core.registerNew(nom_l2_switch_controller.nom_l2_switch_controller)
   else:
-    import pox.controllers.nom_server
-    core.registerNew(pox.controllers.nom_server.NomServer)
+    import pox.controllers.nom_server as nom_server
+    nom_server.launch()
+    
     import distributed_nom_l2_switch_controller
     # server = Pyro4.Proxy("PYRONAME:nom_server.nom_server")
     #server = core.components['NomServer'] # TODOC: for simulation, just grab a direct reference
