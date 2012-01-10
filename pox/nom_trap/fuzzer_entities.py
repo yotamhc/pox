@@ -132,6 +132,15 @@ class MockOpenFlowSwitch (OpenFlowSwitch):
       self.log.warn("Switch already up")
     self.failed = False
     self.connect(self.switch_impl)
+    
+  def serialize(self):
+    # Skip over non-serializable data, e.g. sockets
+    return pickle.dumps({
+        "name" : self.name,
+        "failed" : self.failed,
+        "parent_controller_name" : self.parent_controller_name,
+        "superclass" : OpenFlowSwitch.serialize(self)
+      }, protocol = 0)
   
 class Link():
   """
