@@ -189,7 +189,7 @@ class FuzzTester (EventMixin):
       msg.event("Fuzzer stopping...")
       msg.event("Total rounds completed: %d" % self.logical_time)
       msg.event("Total packets sent: %d" % self.packets_sent)
-      os.sys.exit()
+      os._exit(0)
       
     # ============================================ #
     #     Bookkeeping methods                      #
