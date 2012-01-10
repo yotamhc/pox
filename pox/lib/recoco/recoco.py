@@ -726,6 +726,8 @@ class CallLaterTask (BaseTask):
           e = self._calls.popleft()
           try:
             e[0](*e[1], **e[2])
+          except SystemExit:
+            os.sys._exit()
           except:
             import logging
             logging.getLogger("recoco").exception("Exception calling %s", e[0])
