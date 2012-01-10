@@ -85,8 +85,7 @@ class NomServer (EventMixin):
         log.debug("- goodbye!")
         event.con.close()
       if "get" in r:
-        pass
-        #self.get(event.con)
+        self.get(event.con)
       if "put" in r:
         pass
         #self.put(r["put"]) 
@@ -110,7 +109,7 @@ class NomServer (EventMixin):
 
   def get(self, conn):
     log.info("get")
-    conn.send({"nom_update":self.topology.serialize()}) #, default=lambda obj: obj.serialize)
+    conn.send({"nom_update":self.topology.serialize()})
     
   def put(self, val):
     log.info("put %s" % val)

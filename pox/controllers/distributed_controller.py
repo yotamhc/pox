@@ -102,9 +102,10 @@ class DistributedController(EventMixin, topology.Controller):
           handler for network events.
     """
     self.log.info("Updating nom from %s to %s " % (self.topology, topology))
-    self.topology = topology
+    # TODO: don't just assign right away -- MockSwitch objects will go away
+    #self.topology = topology
     # Register subclass' event handlers
-    self.listenTo(topology, "topology")
+    #self.listenTo(topology, "topology")
     # TODO: react to the change in the topology, by firing queued events to 
     # subclass' ?
     return True

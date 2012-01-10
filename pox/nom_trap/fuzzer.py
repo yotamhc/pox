@@ -329,11 +329,6 @@ class FuzzTester (EventMixin):
           else:
             msg.fail("Invariant violated!")
             
-    def serialize(self):
-      serializable = self.topology.serialize()
-      log.error(str(serializable))
-      return serializable
-            
     def __getattr__( self, name ):
       """
       Delegate unknown attributes to fuzzer (we just interpose)
