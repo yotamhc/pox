@@ -34,6 +34,8 @@ from pox.openflow.discovery import *
 from pox.lib.util import dpidToStr
 from pox.lib.addresses import *
 
+import pickle
+
 # After a switch disconnects, it has this many seconds to reconnect in
 # order to reactivate the same OpenFlowSwitch object.  After this, if
 # it reconnects, it will be a new switch object.
@@ -266,6 +268,16 @@ class OpenFlowSwitch (EventMixin, Switch):
       if entity in p:
         return p
     return None
+      
+  def serialize (self):
+    # Skip over non-serializable data, e.g. sockets
+    return pickle.dumps({
+        "id" : self.id, # TODO: should really call Switch.serialize here, but I'm too lazy
+        "dpid" : self.dpid,
+        "ports" : self.ports,
+        "capabilities" : self.capabilities,
+        # TODO: add in flow table here
+      }, protocol = 0)
 
   def __repr__ (self):
     return "<%s %s>" % (self.__class__.__name__, dpidToStr(self.dpid))

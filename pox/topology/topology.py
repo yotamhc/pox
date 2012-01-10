@@ -29,6 +29,8 @@ from pox.lib.revent import *
 from pox.core import core
 from pox.lib.addresses import *
 
+import pickle
+
 log = core.getLogger()
 
 class EntityEvent (Event):
@@ -111,7 +113,11 @@ class Entity (object):
     self.id = Entity._next_id
     
   def serialize(self):
-    return self
+    return pickle.dumps(self, protocol = 0)
+  
+  @classmethod
+  def deserialize(cls):
+    return pickle.loads(cls, protocol = 0)
 
 class Host (Entity):
   """
