@@ -65,8 +65,6 @@ class NomServer (EventMixin):
         event.con.addListener(MessageReceived, self._handle_MessageReceived, weak=True)
         controller_name = msg['nom_server_handshake']
         self.register_client(controller_name, event.con)
-        # TODO: can we assume that topology is booted?
-        self.topology.addEntity(topology.Controller(controller_name))
         log.debug("- started conversation with %s" % controller_name)
       else:
         log.debug("- ignoring")
@@ -103,6 +101,8 @@ class NomServer (EventMixin):
   def register_client(self, client_name, connection):
     log.info("register %s" % client_name)
     self.registered[client_name] = connection
+    # TODO: can we assume that topology is booted?
+    self.topology.addEntity(topology.Controller(client_name))
 
   def unregister_client(self, client):
     pass
@@ -110,6 +110,7 @@ class NomServer (EventMixin):
   def get(self, conn):
     log.info("get")
     conn.send({"nom_update":self.topology.serialize()})
+    log.debug("get answer sent")
     
   def put(self, val):
     log.info("put %s" % val)

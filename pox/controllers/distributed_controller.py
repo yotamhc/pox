@@ -70,12 +70,17 @@ class DistributedController(EventMixin, topology.Controller):
     sock.connect(("localhost",7790))
     self._server_connection = messenger.TCPMessengerConnection(socket = sock)
     self._server_connection.addListener(messenger.MessageReceived, self._handle_MessageReceived)
+    self.log.debug("Sending nom_server handshake")
     self._server_connection.send({"nom_server_handshake":self.name})
+    self.log.debug("nom_server handhsake sent -- sending get request")
     # Answer comes back asynchronously as a call to nom_update
     self._server_connection.send({"get":None})
+    self.log.debug("get request sent. Starting listen task")
+    self._server_connection.start()
     
   def _handle_MessageReceived (self, event, msg):
-    if event.con.isreadable():
+    event.claim()  # TODO: is this idempotent?
+    if event.con.isReadable():
       r = event.con.read()
       self.log.debug("-%s" % str(r))
       if type(r) is not dict:
