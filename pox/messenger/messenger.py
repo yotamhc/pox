@@ -315,8 +315,8 @@ class TCPMessengerSource (Task):
     listener.bind(self._addr)
     listener.listen(0)
 
-    core.messenger.raiseEventNoErrors(MessengerListening())
     log.debug("Listening for connections")
+    core.messenger.raiseEventNoErrors(MessengerListening())
 
     con = None
     while core.running:
