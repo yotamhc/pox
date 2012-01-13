@@ -304,31 +304,31 @@ class FuzzTester (EventMixin):
     def invariant_check_prompt(self):
       answer = msg.raw_input('Check Invariants? [Ny]')
       if answer != '' and answer.lower() != 'n':
-          msg.interactive("Which one?")
-          msg.interactive("  'l' - loops")
-          msg.interactive("  'b' - blackholes")
-          msg.interactive("  'r' - routing consistency")
-          msg.interactive("  'c' - connectivity")
-          answer = msg.raw_input("  ")
-          result = None
-          if answer.lower() == 'l':
-            result = self.invariant_checker.check_loops()
-          elif answer.lower() == 'b':
-            result = self.invariant_checker.check_blackholes()
-          elif answer.lower() == 'r':
-            result = self.invariant_checker.check_routing_consistency()
-          elif answer.lower() == 'c':
-            result = self.invariant_checker.check_connectivity()
-          else:
-            log.warn("Unknown input...")
+        msg.interactive("Which one?")
+        msg.interactive("  'l' - loops")
+        msg.interactive("  'b' - blackholes")
+        msg.interactive("  'r' - routing consistency")
+        msg.interactive("  'c' - connectivity")
+        answer = msg.raw_input("  ")
+        result = None
+        if answer.lower() == 'l':
+          result = self.invariant_checker.check_loops()
+        elif answer.lower() == 'b':
+          result = self.invariant_checker.check_blackholes()
+        elif answer.lower() == 'r':
+          result = self.invariant_checker.check_routing_consistency()
+        elif answer.lower() == 'c':
+          result = self.invariant_checker.check_connectivity()
+        else:
+          log.warn("Unknown input...")
             
-          if not result:
-            return
-          elif result == "sat":
-            msg.success("Invariant holds!")
-          else:
-            msg.fail("Invariant violated!")
-            
+        if not result:
+          return
+        elif result == "sat":
+          msg.success("Invariant holds!")
+        else:
+          msg.fail("Invariant violated!")
+          
     def __getattr__( self, name ):
       """
       Delegate unknown attributes to fuzzer (we just interpose)
