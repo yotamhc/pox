@@ -273,18 +273,15 @@ class OpenFlowSwitch (EventMixin, Switch):
     # Skip over non-serializable data, e.g. sockets
     serializable = OpenFlowSwitch(self.dpid)
     return pickle.dumps(serializable, protocol = 0)
-
+  
+  def send(self, *args, **kw):
+    return self._connection.send(*args, **kw)
+  
+  def read(self):
+    return self._connection.read()
+  
   def __repr__ (self):
     return "<%s %s>" % (self.__class__.__name__, dpidToStr(self.dpid))
-  
-  def __getattr__( self, name ):
-    """
-    NOTE: for now, we're making OpenflowSwitch a proxy to its underlying
-    connection object. This could be dangerous... so perhaps we should
-    explicitly define the connection operations? Or just force the client
-    to call sw.connection.send() rather than sw.send()
-    """
-    return getattr( self._connection, name )
 
 
 def launch ():
