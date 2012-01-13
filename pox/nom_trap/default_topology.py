@@ -88,6 +88,7 @@ def populate(topology, num_switches=3):
     # Instantiate NOM Switch (which instantiates the SwitchImpl)
     parent_controller = controllers.next()
     switch = MockOpenFlowSwitch(switch_num, ports_for_switch, parent_controller.name)
+    switch.connect()
     
     # HACK: externally define a new field in SwitchImpl
     #       port -> Link

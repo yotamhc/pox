@@ -93,7 +93,7 @@ class MockOpenFlowSwitch (OpenFlowSwitch):
     # Instantiate the Switch Implementation here. We don't use self.switch_impl
     # to communicate directly with the switch, rather, we go through a Connection
     # object as in the normal OpenFlowSwitch implementation.
-    self.switch_impl = SwitchImpl(self.dpid, MockSocket(), name=self.name, ports=self.ofp_phy_ports)
+    self.switch_impl = SwitchImpl(self.dpid, MockSocket(), name=self.name, ports=self.ports)
     
     # Note that OpenFlowSwitch._setConnection won't be called externally,
     # (at least in simulation mode), since pox.core isn't raising any
