@@ -14,7 +14,7 @@ from pox.lib.revent.revent import *
 
 from pox.topology.topology import *
 from pox.openflow.libopenflow_01 import ofp_action_output
-import pox.nom_trap.default_topology as default_topology
+import pox.debugger.default_topology as default_topology
 from fuzzer_entities import *
 from event_generator import EventGenerator
 from invariant_checker import InvariantChecker

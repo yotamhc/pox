@@ -18,10 +18,14 @@ of switches. For example, with N = 3:
 TODO: should this topology include Hosts as well?
 '''
 
-from pox.nom_trap.fuzzer_entities import *
+from pox.debugger.fuzzer_entities import *
 from pox.openflow.libopenflow_01 import ofp_phy_port
 import pox.topology.topology as topology
 from pox.controllers.distributed_controller import DistributedController
+from pox.core import core
+
+
+import struct
 from socket import *
 
 class Cycler():

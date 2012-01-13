@@ -37,7 +37,7 @@ exec python -O "$0" "$@"
 from pox.core import core
 import pox.openflow as of
 import pox.openflow.of_01 as of_01
-import pox.nom_trap as nom_trap
+import pox.debugger as debugger
 
 # Turn on extra info for event exceptions
 import pox.lib.revent as revent
@@ -284,7 +284,7 @@ def post_startup ():
     of_01.launch() # Always launch of_01
 
   if debug:
-    nom_trap.launch()
+    debugger.launch()
 
 def _monkeypatch_console ():
   """
