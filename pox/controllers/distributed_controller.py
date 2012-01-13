@@ -56,7 +56,7 @@ class DistributedController(EventMixin, topology.Controller):
     # To be populated later
     self.topology = topology.Topology()
     # Register subclass' event handlers
-    self.listenTo(topology, "topology")
+    self.listenTo(self.topology, "topology")
         
     self._server_connection = None
     self._queued_commits = []
