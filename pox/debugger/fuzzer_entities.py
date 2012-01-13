@@ -133,7 +133,7 @@ class MockOpenFlowSwitch (OpenFlowSwitch):
     if not self.failed:
       self.log.warn("Switch already up")
     self.failed = False
-    self.connect(self.switch_impl)
+    self.connect(self.switch_impl.ports.values())
     
   def serialize(self):
     # Skip over non-serializable data, e.g. sockets
