@@ -115,7 +115,7 @@ class DistributedController(EventMixin, topology.Controller):
       
       existing_entity = self.topology.getEntityByID(entity_id)
       if existing_entity: 
-        self.log.debug("New metadata for %s: %s " % (existing_entity, entity))
+        self.log.debug("New metadata for %s: %s " % (str(existing_entity), str(entity)))
       else:
         self.topology.addEntity(entity)
      

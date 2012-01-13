@@ -96,7 +96,7 @@ class NomServer (EventMixin):
         self._finish_initialization() 
 
   def _finish_initialization(self):
-    self.topology = core.components['topology'] 
+    self.topology = core.components['topology']
       
   def register_client(self, client_name, connection):
     log.info("register %s" % client_name)
