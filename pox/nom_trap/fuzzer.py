@@ -155,6 +155,15 @@ class FuzzTester (EventMixin):
       if not self.core_up:
         return False
       
+      if self.num_controllers == 1:
+        return True
+      
+      # For multiple controllers, make sure the handshake has completed
+      for controller in filter(lambda str: str.find("controller") != -1, core.components.keys()):
+        # Should contain at least a Controller object
+        if len(controller.topology) == 0:
+          return False
+      
       return True
     
     def start(self):
