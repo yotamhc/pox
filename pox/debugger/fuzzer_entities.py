@@ -107,16 +107,16 @@ class MockOpenFlowSwitch (OpenFlowSwitch):
     
     # In case we are re-connecting with the switch, double check 
     # that switch_impl.socket.receiver_connection is None
-    switch_impl._connection.sock.receiver_connection = None
+    self.switch_impl._connection.sock.receiver_connection = None
     # This will initiate the handshake
-    connection = Connection(MockSocket(switch_impl._connection))
+    connection = Connection(MockSocket(self.switch_impl._connection))
     # Since switch_impl.socket.receiver_connection hasn't been set, 
     # switch_impl will not immediately reply to the OFP_HELLO. This gives us
     # the opportunity to register a ConnectionUp handler before the handshake
     # is complete. 
     connection.addListener(ConnectionUp, self._handle_ConnectionUp)
     # Now set switch_impl.socket.receiver_connection to us
-    switch_impl._connection.sock.set_receiver_connection(connection)
+    self.switch_impl._connection.sock.set_receiver_connection(connection)
     # Now the handshake should complete (instantaneously)
 
   def _handle_ConnectionUp(self, event):    
