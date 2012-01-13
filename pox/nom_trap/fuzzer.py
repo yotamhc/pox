@@ -155,6 +155,8 @@ class FuzzTester (EventMixin):
       if not self.core_up:
         return False
       
+      # TODO: need a mechanism for signaling  when the distributed controller handshake has completed
+      
       return True
     
     def start(self):
