@@ -185,9 +185,6 @@ class Scheduler (object):
     itself.  The easiest way to avoid this is simply not to do it.
     See fast_schedule() and ScheduleTask for more info.
     """
-    
-    print("Schedule called ! ! ! ! %s" % str(task))
-    
     if threading.current_thread() is self._thread:
       # We're know we're good.
       #TODO: Refactor the following with ScheduleTask
