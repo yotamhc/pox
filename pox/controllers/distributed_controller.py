@@ -111,11 +111,13 @@ class DistributedController(EventMixin, topology.Controller):
     for entity_id in topology.keys():
       pickled_entity = topology[entity_id].encode('ascii', 'ignore')
       entity = pickle.loads(pickled_entity)
-      if self.topology.getEntityByID(entity_id):
-        pass
-        # New metadata!
-         
-      self.log.debug("Updating nom from %s to %s " % (self.topology, topology))
+      entity.id = entity_id # probably not necessary
+      
+      existing_entity = self.topology.getEntityByID(entity_id)
+      if existing_entity: 
+        self.log.debug("New metadata for %s: %s " % (existing_entity, entity))
+      else:
+        self.topology.addEntity(entity)
      
     # TODO: react to the change in the topology, by firing queued events to 
     # subclass' ?
