@@ -54,7 +54,7 @@ class DistributedController(EventMixin, topology.Controller):
     self.name = name
     self.log = core.getLogger(name)
     # To be populated later
-    self.topology = topology.Topology()
+    self.topology = topology.Topology("topo:%s" % self.name)
     # Register subclass' event handlers
     self.listenTo(self.topology, "topology")
         
