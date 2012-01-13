@@ -79,21 +79,20 @@ class MockOpenFlowSwitch (OpenFlowSwitch):
   NOTE: /not/ a mock switch implementation, only a mock NOM entity.
         For the mock switch implementation we use pox.openflow.switch_impl
   """
-  def __init__ (self, dpid, ofp_phy_ports, parent_controller_name):
+  def __init__ (self, dpid, parent_controller_name):
     OpenFlowSwitch.__init__(self, dpid)
     self.failed = False
     self.parent_controller_name = parent_controller_name
-    self.ports = ofp_phy_ports
-    
     self.name = "switch#%d" % dpid
     self.log = core.getLogger("nom_" + self.name)
     
-  def connect(self):
+  def connect(self, ofp_phy_ports):
     """ Connect to the underlying switch implementation """
     # Instantiate the Switch Implementation here. We don't use self.switch_impl
     # to communicate directly with the switch, rather, we go through a Connection
     # object as in the normal OpenFlowSwitch implementation.
-    self.switch_impl = SwitchImpl(self.dpid, MockSocket(), name=self.name, ports=self.ports)
+    self.switch_impl = SwitchImpl(self.dpid, MockSocket(), name=self.name, ports=ofp_phy_ports)
+    self.ofp_phy_ports = None
     
     # Note that OpenFlowSwitch._setConnection won't be called externally,
     # (at least in simulation mode), since pox.core isn't raising any
@@ -139,7 +138,9 @@ class MockOpenFlowSwitch (OpenFlowSwitch):
   def serialize(self):
     # Skip over non-serializable data, e.g. sockets
     # TODO: is self.log going to be a problem?
-    serializable = MockOpenFlowSwitch(self.dpid, self.ofp_phy_ports, self.parent_controller_name)
+    serializable = MockOpenFlowSwitch(self.dpid, self.parent_controller_name)
+    # TODO: need a cleaner way to add in the NOM port representation
+    serializable.ofp_phy_ports = self.switch_impl.ofp_phy_ports
     return pickle.dumps(serializable, protocol=0)
   
 class Link():

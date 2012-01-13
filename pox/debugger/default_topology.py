@@ -20,10 +20,10 @@ TODO: should this topology include Hosts as well?
 
 from pox.debugger.fuzzer_entities import *
 from pox.openflow.libopenflow_01 import ofp_phy_port
+from pox.openflow.switch_impl import *
 import pox.topology.topology as topology
 from pox.controllers.distributed_controller import DistributedController
 from pox.core import core
-
 
 import struct
 from socket import *
@@ -91,8 +91,8 @@ def populate(topology, num_switches=3):
       
     # Instantiate NOM Switch (which instantiates the SwitchImpl)
     parent_controller = controllers.next()
-    switch = MockOpenFlowSwitch(switch_num, ports_for_switch, parent_controller.name)
-    switch.connect()
+    switch = MockOpenFlowSwitch(switch_num, parent_controller.name)
+    switch.connect(ports_for_switch)
     
     # HACK: externally define a new field in SwitchImpl
     #       port -> Link
