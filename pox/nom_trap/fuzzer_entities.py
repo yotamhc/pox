@@ -83,15 +83,18 @@ class MockOpenFlowSwitch (OpenFlowSwitch):
     OpenFlowSwitch.__init__(self, dpid)
     self.failed = False
     self.parent_controller_name = parent_controller_name
+    self.ports = ofp_phy_ports
+    
+    self.name = "switch#%d" % dpid
+    self.log = core.getLogger("nom_" + self.name)
+    
+  def connect(self):
+    """ Connect to the underlying switch implementation """
     # Instantiate the Switch Implementation here. We don't use self.switch_impl
     # to communicate directly with the switch, rather, we go through a Connection
     # object as in the normal OpenFlowSwitch implementation.
-    self.name = "switch#%d" % dpid
-    self.log = core.getLogger("nom_" + self.name)
-    self.switch_impl = SwitchImpl(dpid, MockSocket(), name=self.name, ports=ofp_phy_ports)
-    self.connect(self.switch_impl)
+    self.switch_impl = SwitchImpl(self.dpid, MockSocket(), name=self.name, ports=self.ofp_phy_ports)
     
-  def connect(self, switch_impl):
     # Note that OpenFlowSwitch._setConnection won't be called externally,
     # (at least in simulation mode), since pox.core isn't raising any
     # ConnectionUp events. To make sure that self.capabilities et al are 
@@ -135,12 +138,8 @@ class MockOpenFlowSwitch (OpenFlowSwitch):
     
   def serialize(self):
     # Skip over non-serializable data, e.g. sockets
-    return pickle.dumps({
-        "name" : self.name,
-        "failed" : self.failed,
-        "parent_controller_name" : self.parent_controller_name,
-        "superclass" : OpenFlowSwitch.serialize(self)
-      }, protocol = 0)
+    # TODO: is self.log going to be a problem?
+    return MockOpenFlowSwitch(self.dpid, self.ofp_phy_ports, self.parent_controller_name)
   
 class Link():
   """
