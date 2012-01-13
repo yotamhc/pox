@@ -271,13 +271,8 @@ class OpenFlowSwitch (EventMixin, Switch):
       
   def serialize (self):
     # Skip over non-serializable data, e.g. sockets
-    return pickle.dumps({
-        "id" : self.id, # TODO: should really call Switch.serialize here, but I'm too lazy
-        "dpid" : self.dpid,
-        "ports" : self.ports,
-        "capabilities" : self.capabilities,
-        # TODO: add in flow table here
-      }, protocol = 0)
+    serializable = OpenFlowSwitch(self.dpid)
+    return pickle.dumps(serializable, protocol = 0)
 
   def __repr__ (self):
     return "<%s %s>" % (self.__class__.__name__, dpidToStr(self.dpid))
