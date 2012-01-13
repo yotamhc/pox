@@ -21,6 +21,7 @@ import signal
 import time
 import copy
 import socket
+import pickle
 
 class DistributedController(EventMixin, topology.Controller):
   """
@@ -54,7 +55,8 @@ class DistributedController(EventMixin, topology.Controller):
     self.log = core.getLogger(name)
     # To be populated later
     self.topology = topology.Topology()
-    self.nom_update(self.topology)
+    # Register subclass' event handlers
+    self.listenTo(topology, "topology")
         
     self._server_connection = None
     self._queued_commits = []
@@ -106,6 +108,10 @@ class DistributedController(EventMixin, topology.Controller):
       ii. Either POX or this client (should) register this method as a
           handler for network events.
     """
+    for entity_id in topology.keys():
+      pickled_entity = topology[entity_id].encode('ascii', 'ignore')
+      entity = pickle.loads(pickled_entity)
+      
     self.log.info("Updating nom from %s to %s " % (self.topology, topology))
     # TODO: don't just assign right away -- MockSwitch objects will go away
     #self.topology = topology

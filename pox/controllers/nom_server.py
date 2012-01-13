@@ -109,7 +109,9 @@ class NomServer (EventMixin):
 
   def get(self, conn):
     log.info("get")
-    conn.send({"nom_update":self.topology.serialize()})
+    serialized = self.topology.serialize()
+    log.debug("serialized: %s" % str(serialized))
+    conn.send({"nom_update":serialized})
     log.debug("get answer sent")
     
   def put(self, val):
