@@ -139,7 +139,8 @@ class MockOpenFlowSwitch (OpenFlowSwitch):
   def serialize(self):
     # Skip over non-serializable data, e.g. sockets
     # TODO: is self.log going to be a problem?
-    return MockOpenFlowSwitch(self.dpid, self.ofp_phy_ports, self.parent_controller_name)
+    serializable = MockOpenFlowSwitch(self.dpid, self.ofp_phy_ports, self.parent_controller_name)
+    return pickle.dumps(serializable, protocol=0)
   
 class Link():
   """
