@@ -73,9 +73,8 @@ def handle_FEATURES_REPLY (con, msg):
   if not connecting:
     return
 
-
   barrier = of.ofp_barrier_request()
-  
+
   def finish_connecting (event):
     if event.xid != barrier.xid:
       con.dpid = None
