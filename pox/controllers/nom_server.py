@@ -132,13 +132,13 @@ class NomServer (EventMixin):
    
   def put(self, id2entity):
     # TODO: does nom_server need to send back an ACK?
-    log.info("put %s" % id2entity)
+    log.info("put")
     self.topology.deserializeAndMerge(id2entity)
     # TODO: optimization: don't send upate to the original sender
     # TODO: rather than send a snapshot of the entire Topology, use
     #       an rsync-like stream of Updates
     for client_name in self.registered.keys():
-      log.info("invalidating/updating %s" % client_name)
+      log.debug("invalidating/updating %s" % client_name)
       connection = self.registered[client_name]
       # Push out the new topology
       self.get(connection)
