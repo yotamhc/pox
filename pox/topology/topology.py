@@ -266,6 +266,7 @@ class Topology (EventMixin):
       existing_entity = self.getEntityByID(entity_id)
       if existing_entity: 
         self.log.debug("New metadata for %s: %s " % (str(existing_entity), str(entity)))
+        # TODO: define an Entity.merge method (need to do something about his update!)
       else:
         self.addEntity(entity)
 
