@@ -89,10 +89,12 @@ class DistributedController(EventMixin, topology.Controller):
     event.claim()  
     if event.con.isReadable():
       r = event.con.read()
-      self.log.debug("-%s" % str(r))
       if type(r) is not dict:
         self.log.warn("message was not a dict!")
         return
+      
+      self.log.debug("Message received, type: %s-" % r.keys())
+      
       if "nom_update" in r:
         self.nom_update(r["nom_update"])
     else:
@@ -113,10 +115,8 @@ class DistributedController(EventMixin, topology.Controller):
       ii. Either POX or this client (should) register this method as a
           handler for network events.
     """
-    # TODO: factor this out into pox.topology.Topology
-    self.log.debug(update)
     xid, id2entity = update
-    
+    self.log.debug("nom_update %d" % xid)
     self.topology.deserializeAndMerge(id2entity) 
             
     update_ack = UpdateACK(xid, self.name)

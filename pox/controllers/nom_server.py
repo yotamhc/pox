@@ -82,10 +82,11 @@ class NomServer (EventMixin):
   def _handle_MessageReceived (self, event, msg):
     if event.con.isReadable():
       r = event.con.read()
-      log.debug("-%s" % str(r))
       if type(r) is not dict:
         log.warn("message was not a dict!")
         return
+      
+      log.debug("MessageRecieved -%s" % str(r.keys()))
       
       if r.get("bye",False):
         log.debug("- goodbye!")
@@ -126,9 +127,8 @@ class NomServer (EventMixin):
     serialized = self.topology.serialize()
     xid = self._next_update_xid()
     update = NomUpdate(xid, serialized)
-    log.debug(str(update))
     conn.send({"nom_update":update})
-    log.debug("get answer sent")
+    log.debug("get answer %d sent" % xid)
    
   def put(self, id2entity):
     # TODO: does nom_server need to send back an ACK?
