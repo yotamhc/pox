@@ -5,6 +5,8 @@ from pox.openflow import PacketIn
 from pox.topology.topology import Switch, Entity
 from pox.lib.revent import EventMixin
 
+import pickle
+
 # Note that control applications are /stateless/; they are simply a function:
 #    f(view) -> configuration
 #
@@ -52,7 +54,7 @@ class LearningSwitch (EventMixin, Entity):
                    goes out the appropriate port
              2bb2) Send buffered packet out appropriate port
   """
-  def __init__ (self, switch):
+  def __init__ (self, name, switch=None, macToPort={}):
     """
     Initialize the NOM Wrapper for Switch Entities
     
@@ -62,14 +64,16 @@ class LearningSwitch (EventMixin, Entity):
     # The long-term solution would be to create a second NOM layer for user-defined
     # entities.
     Entity.__init__(self) 
+    self.name = name
     self.switch = switch
-    self.log = core.getLogger("learning_" + self.switch.name)
+    self.log = core.getLogger(name) 
 
     # We define our own state
-    self.macToPort = {}
+    self.macToPort = macToPort
 
-    # We also define our behavior by registering an event handler (_handle_PacketIn)
-    self.listenTo(switch)
+    if isinstance(switch, Entity):
+      # We also define our behavior by registering an event handler (_handle_PacketIn)
+      self.listenTo(switch)
 
   def _handle_PacketIn (self, packet_in_event):
     """ Event handler for PacketIn events: run the learning switch algorithm """
@@ -107,3 +111,9 @@ class LearningSwitch (EventMixin, Entity):
         msg.actions.append(of.ofp_action_output(port = port))
         msg.buffer_id = packet_in_event.ofp.buffer_id
         self.switch.send(msg)
+        
+  def serialize(self):
+    serializable = LearningSwitch(self.name, self.switch.id)
+    serializable.log = None
+    return pickle.dumps(serializable, protocol = 0)
+    
