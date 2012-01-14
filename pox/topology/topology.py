@@ -191,8 +191,7 @@ class Topology (EventMixin):
   def removeEntity (self, entity):
     del self._entities[entity.id]
     self.log.info(str(entity) + " left")
-    if isinstance(entity, Switch):
-      self.raiseEvent(SwitchLeave, entity)
+    if isinstance(entity, Switch): self.raiseEvent(SwitchLeave, entity)
     elif isinstance(entity, Host):
       self.raiseEvent(HostLeave, entity)
     else:
@@ -242,11 +241,33 @@ class Topology (EventMixin):
     return rv
   
   def serialize (self):
+    """
+    Picklize our current entities.
+    
+    Returns a hash: { id -> pickled entitiy }
+    """
     id2entity = {}
     for id in self._entities:
       entity = self._entities[id]
       id2entity[id] = entity.serialize()
     return id2entity
+  
+  def deserializeAndMerge (self, id2entity):
+    """
+    Given the output of topology.serialize(), deserialize each entity, and:
+      - insert a new Entry if it didn't already exist here, or
+      - update a pre-existing entry if it already existed
+    """
+    for entity_id in id2entity.keys():
+      pickled_entity = id2entity[entity_id].encode('ascii', 'ignore')
+      entity = pickle.loads(pickled_entity)
+      entity.id = entity_id # probably not necessary
+      
+      existing_entity = self.getEntityByID(entity_id)
+      if existing_entity: 
+        self.log.debug("New metadata for %s: %s " % (str(existing_entity), str(entity)))
+      else:
+        self.addEntity(entity)
 
   def _fulfill_SwitchJoin_promise(self, handler):
     """ Trigger the SwitchJoin handler for all pre-existing switches """
