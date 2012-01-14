@@ -171,7 +171,7 @@ class Topology (EventMixin):
     self._entities = {}
     self.log = core.getLogger(name)
     
-    # If a client registers a handler for these events after they have
+    # If a client registers a handler for therse events after they have
     # already occurred, we promise to re-issue them to the newly joined
     # client.
     self._event_promises = {
@@ -245,7 +245,6 @@ class Topology (EventMixin):
     id2entity = {}
     for id in self._entities:
       entity = self._entities[id]
-      self.log.error("id: %s, entity %s" % (str(id), str(entity)))
       id2entity[id] = entity.serialize()
     return id2entity
 
