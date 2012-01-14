@@ -106,10 +106,19 @@ class Entity (object):
   # Some entities don't need this because they have more meaningful
   # identifiers.
   _next_id = 0
+  _all_ids = set()
   
-  def __init__ (self):
-    Entity._next_id += 1
-    self.id = Entity._next_id
+  def __init__ (self, id=None):
+    if id:
+      if id in Entity.__all_ids:
+        raise "ID %s already taken" % str(id)
+      Entity.__all_ids.add(id)
+    else:
+      Entity._next_id += 1
+      id = Entity._next_id
+      Entity.__all_ids.add(id)
+    
+    self.id = id
     
   def serialize(self):
     return pickle.dumps(self, protocol = 0)
@@ -133,7 +142,7 @@ class Switch (Entity):
   def __init__(self, id):
     # Switches often have something more meaningful to use as an ID
     # (e.g., a DPID or MAC address), so they take it as a parameter.
-    self.id = id
+    Entity.__init__(id)
 
 class Port (Entity):
   def __init__ (self, num, hwAddr, name):
