@@ -134,6 +134,9 @@ class NomServer (EventMixin):
   def put(self, val):
     log.info("put %s" % val)
     self.topology = val
+    # TODO: optimization: don't send upate to the original sender
+    # TODO: rather than send a snapshot of the entire Topology, use
+    #       an rsync-like stream of Updates
     for client_name in self.registered.keys():
       log.info("invalidating/updating %s" % client_name)
       connection = self.registered[client_name]
