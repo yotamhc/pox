@@ -444,6 +444,12 @@ class EventMixin (object):
     See also: listenTo(), autoBindEvents()
     """
     return autoBindEvents(sink, self, prefix, weak)
+  
+  def clearHandlers(self):
+    """
+    Remove all handlers from this object
+    """
+    self._eventMixin_handlers = {}
 
 
 def autoBindEvents (sink, source, prefix='', weak=False):
