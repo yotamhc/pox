@@ -149,7 +149,12 @@ class FuzzTester (EventMixin):
         self.start()
           
     def _ready_to_start(self):
-      if len(self.topology.getEntitiesOfType(Controller, True)) < self.num_controllers:
+      controllers = self.topology.getEntitiesOfType(Controller, True)
+      if len(controllers) < self.num_controllers:
+        return False
+      
+      handshake_complete_controllers = filter(lambda c: c.handshake_complete, controllers)
+      if len(handshake_complete_controllers) < self.num_controllers:
         return False
       
       if not self.core_up:
