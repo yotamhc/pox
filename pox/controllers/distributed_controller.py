@@ -84,7 +84,9 @@ class DistributedController(EventMixin, topology.Controller):
     self._server_connection.start()
     
   def _handle_MessageReceived (self, event, msg):
-    event.claim()  # TODO: is this idempotent?
+    # TODO: event.claim() should be factored out -- I want to claim the connection
+    #       before the first MessageReceived event occurs.
+    event.claim()  
     if event.con.isReadable():
       r = event.con.read()
       self.log.debug("-%s" % str(r))
