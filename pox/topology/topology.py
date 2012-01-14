@@ -109,15 +109,14 @@ class Entity (object):
   _all_ids = set()
   
   def __init__ (self, id=None):
-    if id:
-      if id in Entity.__all_ids:
-        raise "ID %s already taken" % str(id)
-      Entity.__all_ids.add(id)
+    if id and id in Entity._all_ids:
+      raise Exception("ID %s already taken" % str(id))
     else:
-      Entity._next_id += 1
+      while Entity._next_id in Entity._all_ids:
+        Entity._next_id += 1
       id = Entity._next_id
-      Entity.__all_ids.add(id)
     
+    Entity._all_ids.add(id)
     self.id = id
     
   def serialize(self):
@@ -139,11 +138,8 @@ class Switch (Entity):
   Subclassed by protocol-specific switch classes,
   e.g. pox.openflow.topology.OpenFlowSwitch
   """
-  def __init__(self, id):
-    # Switches often have something more meaningful to use as an ID
-    # (e.g., a DPID or MAC address), so they take it as a parameter.
-    Entity.__init__(id)
-
+  pass
+  
 class Port (Entity):
   def __init__ (self, num, hwAddr, name):
     Entity.__init__(self)
