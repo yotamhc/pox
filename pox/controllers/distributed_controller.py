@@ -117,17 +117,8 @@ class DistributedController(EventMixin, topology.Controller):
     self.log.debug(update)
     xid, id2entity = update
     
-    for entity_id in id2entity.keys():
-      pickled_entity = id2entity[entity_id].encode('ascii', 'ignore')
-      entity = pickle.loads(pickled_entity)
-      entity.id = entity_id # probably not necessary
-      
-      existing_entity = self.topology.getEntityByID(entity_id)
-      if existing_entity: 
-        self.log.debug("New metadata for %s: %s " % (str(existing_entity), str(entity)))
-      else:
-        self.topology.addEntity(entity)
-        
+    self.topology.deserializeAndMerge(id2entity) 
+            
     update_ack = UpdateACK(xid, self.name)
     self._server_connection.send({"nom_update_ack":update_ack})
     self.log.debug("Sent nom_update_ack %d, %s" % update_ack)

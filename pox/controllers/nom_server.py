@@ -130,10 +130,10 @@ class NomServer (EventMixin):
     conn.send({"nom_update":update})
     log.debug("get answer sent")
    
-  def put(self, val):
+  def put(self, id2entity):
     # TODO: does nom_server need to send back an ACK?
-    log.info("put %s" % val)
-    self.apply_updates(val) 
+    log.info("put %s" % id2entity)
+    self.topology.deserializeAndMerge(id2entity)
     # TODO: optimization: don't send upate to the original sender
     # TODO: rather than send a snapshot of the entire Topology, use
     #       an rsync-like stream of Updates
@@ -149,9 +149,6 @@ class NomServer (EventMixin):
     controller.handshake_completed()
     self.topology.raiseEvent(topology.Update())
     # TODO: do something else with the ACK
-          
-  def apply_updates(self, val):
-    pass
    
 def launch():
   import pox.messenger.messenger as messenger
