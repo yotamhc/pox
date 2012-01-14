@@ -87,7 +87,7 @@ class Update (Event):
   """
   Fired by Topology whenever anything has changed
   """
-  def __init__ (self, event):
+  def __init__ (self, event=None):
     Event.__init__(self)
     self.event = event
 
@@ -143,11 +143,14 @@ class Port (Entity):
     self.name = name
     
 class Controller (Entity):
-  def __init__(self, name):
+  def __init__(self, name, handshake_complete=False):
     self.id = name
     # TODO: python aliases?
     self.name = name
-  
+    self.handshake_complete = handshake_complete
+    
+  def handshake_completed(self):
+    self.handshake_complete = True
 
 class Topology (EventMixin):
   _eventMixin_events = [
