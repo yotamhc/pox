@@ -8,12 +8,17 @@ from pox.lib.recoco import *
 from pox.messenger.messenger import *
 import pox.topology.topology as topology
 
+from collections import namedtuple
+
 import sys
 import signal
 import socket
 
 name = "nom_server"
 log = core.getLogger(name)
+
+# Keep Nom Updates unique`
+NomUpdate = namedtuple('NomUpdate', 'xid id2entity')
 
 class NomServer (EventMixin):
   """
@@ -37,7 +42,7 @@ class NomServer (EventMixin):
   
   _core_name = name
   
-  # The set of components we depend on. These must be loaded before we can begin.
+  # The set of components we depend on. These must be loaded before we can begin.i
   _wantComponents = set(['topology'])
   
   def __init__(self):
@@ -47,6 +52,9 @@ class NomServer (EventMixin):
     
     # client name -> TCPMessageConnection
     self.registered = {}
+    
+    # Unique ids for Nom Updates (id's needed for ACKs)
+    self.next_nom_update_id = 0
     
     # TODO: the following code is highly redundant with controller.rb
     self.topology = None
@@ -87,6 +95,8 @@ class NomServer (EventMixin):
       if "put" in r:
         pass
         #self.put(r["put"]) 
+      if "nom_update_ack" in r:
+        self.update_ack(r['nom_update_ack'])
     else:
       log.debug("- conversation finished")
   
@@ -106,12 +116,19 @@ class NomServer (EventMixin):
 
   def unregister_client(self, client):
     pass
+  
+  def _next_update_xid(self):
+    xid = self.next_nom_update_id
+    self.next_nom_update_id += 1
+    return xid
 
   def get(self, conn):
     log.info("get")
     serialized = self.topology.serialize()
-    log.debug("serialized: %s" % str(serialized))
-    conn.send({"nom_update":serialized})
+    xid = self._next_update_xid()
+    update = NomUpdate(xid, serialized)
+    log.debug(str(update))
+    conn.send({"nom_update":update})
     log.debug("get answer sent")
     
   def put(self, val):
@@ -122,6 +139,12 @@ class NomServer (EventMixin):
       connection = self.registered[client_name]
       connection.send({"nom_update":self.topology})
       
+  def update_ack(self, update_ack):
+    xid, controller_name = update_ack
+    controller = self.topology.getEntityByID(controller_name)
+    controller.handshake_completed()
+    self.topology.raiseEvent(topology.Update())
+    # TODO: do something else with the ACK
           
 def launch():
   import pox.messenger.messenger as messenger

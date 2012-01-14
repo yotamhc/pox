@@ -22,6 +22,9 @@ import time
 import copy
 import socket
 import pickle
+from collections import namedtuple
+
+UpdateACK = namedtuple('UpdateACK', 'xid controller_name')
 
 class DistributedController(EventMixin, topology.Controller):
   """
@@ -93,7 +96,7 @@ class DistributedController(EventMixin, topology.Controller):
     else:
       self.log.debug("- conversation finished")
 
-  def nom_update(self, topology):
+  def nom_update(self, update):
     """
     According to Scott's philosophy of SDN, a control application is a
     function: F(view) => configuration
@@ -108,8 +111,11 @@ class DistributedController(EventMixin, topology.Controller):
       ii. Either POX or this client (should) register this method as a
           handler for network events.
     """
-    for entity_id in topology.keys():
-      pickled_entity = topology[entity_id].encode('ascii', 'ignore')
+    self.log.debug(update)
+    xid, id2entity = update
+    
+    for entity_id in id2entity.keys():
+      pickled_entity = id2entity[entity_id].encode('ascii', 'ignore')
       entity = pickle.loads(pickled_entity)
       entity.id = entity_id # probably not necessary
       
@@ -118,6 +124,10 @@ class DistributedController(EventMixin, topology.Controller):
         self.log.debug("New metadata for %s: %s " % (str(existing_entity), str(entity)))
       else:
         self.topology.addEntity(entity)
+        
+    update_ack = UpdateACK(xid, self.name)
+    self._server_connection.send({"nom_update_ack":update_ack})
+    self.log.debug("Sent nom_update_ack %d, %s" % update_ack)
      
     # TODO: react to the change in the topology, by firing queued events to 
     # subclass' ?
