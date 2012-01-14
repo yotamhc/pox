@@ -84,6 +84,7 @@ class MockOpenFlowSwitch (OpenFlowSwitch):
     self.failed = False
     self.parent_controller_name = parent_controller_name
     self.name = "switch#%d" % dpid
+    self.switch_impl = None
     self.log = core.getLogger("nom_" + self.name)
     
   def connect(self, ofp_phy_ports):
@@ -142,7 +143,8 @@ class MockOpenFlowSwitch (OpenFlowSwitch):
     # Can't serialize files
     serializable.log = None
     # TODO: need a cleaner way to add in the NOM port representation
-    serializable.ofp_phy_ports = self.switch_impl.ports.values()
+    if self.switch_impl:
+      serializable.ofp_phy_ports = self.switch_impl.ports.values()
     return pickle.dumps(serializable, protocol=0)
   
 class Link():
