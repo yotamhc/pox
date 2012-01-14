@@ -113,7 +113,13 @@ class LearningSwitch (EventMixin, Entity):
         self.switch.send(msg)
         
   def serialize(self):
-    serializable = LearningSwitch(self.name, self.switch.id)
+    # TODO: this is a hack... need a better way of differntiating IDs (remote case) from raw objects (local case)
+    if isinstance(self.switch, Entity):
+      switch_id = self.switch.id
+    else:
+      switch_id = self.switch
+      
+    serializable = LearningSwitch(self.name, switch_id)
     serializable.log = None
     return pickle.dumps(serializable, protocol = 0)
     
