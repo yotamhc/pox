@@ -169,6 +169,7 @@ class Topology (EventMixin):
   def __init__ (self, name="topology"):
     EventMixin.__init__(self)
     self._entities = {}
+    self.name = name
     self.log = core.getLogger(name)
     
     # If a client registers a handler for therse events after they have
@@ -202,7 +203,7 @@ class Topology (EventMixin):
     if entity.id in self._entities:
       raise RuntimeError("Entity exists")
     self._entities[entity.id] = entity
-    self.log.info(str(entity) + " joined")
+    self.log.debug(str(entity) + " (id: " + str(entity.id) + ") joined")
     if isinstance(entity, Switch):
       self.raiseEvent(SwitchJoin, entity)
     elif isinstance(entity, Host):
@@ -261,9 +262,14 @@ class Topology (EventMixin):
     for entity_id in id2entity.keys():
       pickled_entity = id2entity[entity_id].encode('ascii', 'ignore')
       entity = pickle.loads(pickled_entity)
-      entity.id = entity_id # probably not necessary
+      entity.id = entity_id.encode('ascii', 'ignore')
+      try:
+        # Try to parse it as an int
+        entity.id = int(entity.id)
+      except ValueError:
+        pass
       
-      existing_entity = self.getEntityByID(entity_id)
+      existing_entity = self.getEntityByID(entity.id)
       if existing_entity: 
         self.log.debug("New metadata for %s: %s " % (str(existing_entity), str(entity)))
         # TODO: define an Entity.merge method (need to do something about his update!)
