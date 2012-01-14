@@ -113,6 +113,7 @@ class DistributedController(EventMixin, topology.Controller):
       ii. Either POX or this client (should) register this method as a
           handler for network events.
     """
+    # TODO: factor this out into pox.topology.Topology
     self.log.debug(update)
     xid, id2entity = update
     
@@ -138,8 +139,7 @@ class DistributedController(EventMixin, topology.Controller):
   def commit_nom_change(self):
     self.log.debug("Committing NOM update")
     if self._server_connection:
-      pass
-      #self._server_connection.send({"put":self.topology})
+      self._server_connection.send({"put":self.topology.serialize()})
     else:
       self.log.debug("Queuing nom commit")
       self._queued_commits.append(copy.deepcopy(self.topology))

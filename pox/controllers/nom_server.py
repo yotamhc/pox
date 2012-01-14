@@ -93,8 +93,7 @@ class NomServer (EventMixin):
       if "get" in r:
         self.get(event.con)
       if "put" in r:
-        pass
-        #self.put(r["put"]) 
+        self.put(r["put"]) 
       if "nom_update_ack" in r:
         self.update_ack(r['nom_update_ack'])
     else:
@@ -130,18 +129,20 @@ class NomServer (EventMixin):
     log.debug(str(update))
     conn.send({"nom_update":update})
     log.debug("get answer sent")
-    
+   
   def put(self, val):
+    # TODO: does nom_server need to send back an ACK?
     log.info("put %s" % val)
-    self.topology = val
+    self.apply_updates(val) 
     # TODO: optimization: don't send upate to the original sender
     # TODO: rather than send a snapshot of the entire Topology, use
     #       an rsync-like stream of Updates
     for client_name in self.registered.keys():
       log.info("invalidating/updating %s" % client_name)
       connection = self.registered[client_name]
-      connection.send({"nom_update":self.topology})
-      
+      # Push out the new topology
+      self.get(connection)
+     
   def update_ack(self, update_ack):
     xid, controller_name = update_ack
     controller = self.topology.getEntityByID(controller_name)
@@ -149,6 +150,9 @@ class NomServer (EventMixin):
     self.topology.raiseEvent(topology.Update())
     # TODO: do something else with the ACK
           
+  def apply_updates(self, val):
+    pass
+   
 def launch():
   import pox.messenger.messenger as messenger
   # TODO: don't assume localhost:7790 for emulation
