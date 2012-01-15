@@ -75,7 +75,6 @@ class ofp_header (object):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 8):
-      print 'Warning! ofp_header.unpack() was not passed enough bytes!'
       return binaryString
     (self.version, self.header_type, self.length, self.xid) = struct.unpack_from("!BBHL", binaryString, 0)
     return binaryString[8:]
@@ -144,7 +143,6 @@ class ofp_phy_port (object):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 48):
-      print 'Warning! ofp_phy_port.unpack() was not passed enough bytes!'
       return binaryString
     (self.port_no,) = struct.unpack_from("!H", binaryString, 0)
     self.hw_addr = EthAddr(binaryString[2:8])
@@ -243,7 +241,6 @@ class ofp_packet_queue (object):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 8):
-      print 'Warning! ofp_packet_queue.unpack() was not passed enough bytes!'
       return binaryString
     (self.queue_id, self.length) = struct.unpack_from("!LH", binaryString, 0)
     return binaryString[8:]
@@ -300,7 +297,6 @@ class ofp_queue_prop_header (object):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 8):
-      print 'Warning! ofp_queue_prop_header.unpack() was not passed enough bytes!'
       return binaryString
     (self.property, self.length) = struct.unpack_from("!HH", binaryString, 0)
     return binaryString[8:]
@@ -348,7 +344,6 @@ class ofp_queue_prop_min_rate (object):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 16):
-      print 'Warning! ofp_queue_prop_min_rate.unpack() was not passed enough bytes!'
       return binaryString
     self.prop_header.unpack(binaryString[0:])
     (self.rate,) = struct.unpack_from("!H", binaryString, 8)
@@ -593,7 +588,6 @@ class ofp_match (object):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 40):
-      print 'Warning! ofp_match.unpack() was not passed enough bytes!'
       return binaryString
     (wildcards, self._in_port) = struct.unpack_from("!LH", binaryString, 0)
     self._dl_src = EthAddr(struct.unpack_from("!BBBBBB", binaryString, 6))
@@ -627,8 +621,8 @@ class ofp_match (object):
     return int(h & 0x7fFFffFF)
 
   def matches_with_wildcards (self, other):
-    """ 
-       Test whether /this/ match completely encompasses the other match. Important for non-strict modify flow_mods etc.
+    """
+    Test whether /this/ match completely encompasses the other match. Important for non-strict modify flow_mods etc.
     """
     if not isinstance(other, ofp_match): raise "other not an instance of ofp_match: %s" % other
     # short cut for equal matches
@@ -778,7 +772,6 @@ class ofp_action_header (object):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 8):
-      print 'Warning! ofp_action_header.unpack() was not passed enough bytes!'
       return binaryString
     (self.type, self.length) = struct.unpack_from("!HH", binaryString, 0)
     if len(binaryString) < self.length: return binaryString
@@ -826,7 +819,6 @@ class ofp_action_output (object):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 8):
-      print 'Warning! ofp_action_output.unpack() was not passed enough bytes!'
       return binaryString
     (self.type, self.length, self.port, self.max_len) = struct.unpack_from("!HHHH", binaryString, 0)
     return binaryString[8:]
@@ -879,7 +871,6 @@ class ofp_action_enqueue (object):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 16):
-      print 'Warning! ofp_action_enqueue.unpack() was not passed enough bytes!'
       return binaryString
     (self.type, self.length, self.port) = struct.unpack_from("!HHH", binaryString, 0)
     (self.queue_id,) = struct.unpack_from("!L", binaryString, 12)
@@ -932,7 +923,6 @@ class ofp_action_vlan_vid (object):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 8):
-      print 'Warning! ofp_action_vlan_vid.unpack() was not passed enough bytes!'
       return binaryString
     (self.type, self.length, self.vlan_vid) = struct.unpack_from("!HHH", binaryString, 0)
     return binaryString[8:]
@@ -982,7 +972,6 @@ class ofp_action_vlan_pcp (object):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 8):
-      print 'Warning! ofp_action_vlan_pcp.unpack() was not passed enough bytes!'
       return binaryString
     (self.type, self.length, self.vlan_pcp) = struct.unpack_from("!HHB", binaryString, 0)
     return binaryString[8:]
@@ -1051,7 +1040,6 @@ class ofp_action_dl_addr (object):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 16):
-      print 'Warning! ofp_action_dl_addr.unpack() was not passed enough bytes!'
       return binaryString
     (self.type, self.length) = struct.unpack_from("!HH", binaryString, 0)
     (self.dl_addr[0], self.dl_addr[1], self.dl_addr[2], self.dl_addr[3], self.dl_addr[4], self.dl_addr[5]) = struct.unpack_from("!BBBBBB", binaryString, 4)
@@ -1110,7 +1098,6 @@ class ofp_action_nw_addr (object):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 8):
-      print 'Warning! ofp_action_nw_addr.unpack() was not passed enough bytes!'
       return binaryString
     (self.type, self.length, self.nw_addr) = struct.unpack_from("!HHL", binaryString, 0)
     self.nw_addr = IPAddr(self.nw_addr, networkOrder=False)
@@ -1158,7 +1145,6 @@ class ofp_action_nw_tos (object):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 8):
-      print 'Warning! ofp_action_nw_tos.unpack() was not passed enough bytes!'
       return binaryString
     (self.type, self.length, self.nw_tos) = struct.unpack_from("!HHB", binaryString, 0)
     return binaryString[8:]
@@ -1216,7 +1202,6 @@ class ofp_action_tp_port (object):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 8):
-      print 'Warning! ofp_action_tp_port.unpack() was not passed enough bytes!'
       return binaryString
     (self.type, self.length, self.tp_port) = struct.unpack_from("!HHH", binaryString, 0)
     return binaryString[8:]
@@ -1260,7 +1245,6 @@ class ofp_action_vendor_header (object):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 8):
-      print 'Warning! ofp_action_vendor_header.unpack() was not passed enough bytes!'
       return binaryString
     (self.type, self.length, self.vendor) = struct.unpack_from("!HHL", binaryString, 0)
     return binaryString[8:]
@@ -1324,7 +1308,6 @@ class ofp_features_reply (ofp_header):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 32):
-      print 'Warning! ofp_features_reply.unpack() was not passed enough bytes!'
       return binaryString
     ofp_header.unpack(self, binaryString[0:])
     (self.datapath_id, self.n_buffers, self.n_tables) = struct.unpack_from("!QLB", binaryString, 8)
@@ -1409,7 +1392,6 @@ class ofp_switch_config (ofp_header):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 12):
-      print 'Warning! ofp_switch_config.unpack() was not passed enough bytes!'
       return binaryString
     ofp_header.unpack(self, binaryString[0:])
     (self.flags, self.miss_send_len) = struct.unpack_from("!HH", binaryString, 8)
@@ -1495,7 +1477,6 @@ class ofp_flow_mod (ofp_header):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 72):
-      print 'Warning! ofp_flow_mod.unpack() was not passed enough bytes!'
       return binaryString
     ofp_header.unpack(self, binaryString[0:])
     self.match.unpack(binaryString[8:])
@@ -1602,7 +1583,6 @@ class ofp_port_mod (ofp_header):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 32):
-      print 'Warning! ofp_port_mod.unpack() was not passed enough bytes!'
       return binaryString
     ofp_header.unpack(self, binaryString[0:])
     (self.port_no,) = struct.unpack_from("!H", binaryString, 8)
@@ -1663,7 +1643,6 @@ class ofp_queue_get_config_request (ofp_header):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 12):
-      print 'Warning! ofp_queue_get_config_request.unpack() was not passed enough bytes!'
       return binaryString
     ofp_header.unpack(self, binaryString[0:])
     (self.port,) = struct.unpack_from("!H", binaryString, 8)
@@ -1714,7 +1693,6 @@ class ofp_queue_get_config_reply (ofp_header):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 16):
-      print 'Warning! ofp_queue_get_config_reply.unpack() was not passed enough bytes!'
       return binaryString
     ofp_header.unpack(self, binaryString[0:])
     (self.port,) = struct.unpack_from("!H", binaryString, 8)
@@ -1771,7 +1749,6 @@ class ofp_stats_request (ofp_header):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 8):
-      print 'Warning! ofp_stats_request.unpack() was not passed enough bytes!'
       return binaryString
     ofp_header.unpack(self, binaryString[0:])
     (self.type, self.flags) = struct.unpack_from("!HH", binaryString, 8)
@@ -1826,7 +1803,6 @@ class ofp_stats_reply (ofp_header):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 12):
-      print 'Warning! ofp_stats_reply.unpack() was not passed enough bytes!'
       return binaryString
     ofp_header.unpack(self, binaryString[0:])
     (self.type, self.flags) = struct.unpack_from("!HH", binaryString, 8)
@@ -1916,7 +1892,6 @@ class ofp_desc_stats (object):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 1056):
-      print 'Warning! ofp_desc_stats.unpack() was not passed enough bytes!'
       return binaryString
     self.mfr_desc = binaryString[0:256].replace("\0","")
     self.hw_desc = binaryString[256:512].replace("\0","")
@@ -1971,7 +1946,6 @@ class ofp_flow_stats_request (object):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 44):
-      print 'Warning! ofp_flow_stats_request.unpack() was not passed enough bytes!'
       return binaryString
     self.match.unpack(binaryString[0:])
     (self.table_id, self._pad, self.out_port) = struct.unpack_from("!BBH", binaryString, 40)
@@ -2039,7 +2013,6 @@ class ofp_flow_stats (object):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 88):
-      print 'Warning! ofp_flow_stats.unpack() was not passed enough bytes!'
       return binaryString
     (self.length, self.table_id, self._pad) = struct.unpack_from("!HBB", binaryString, 0)
     self.match.unpack(binaryString[4:])
@@ -2117,7 +2090,6 @@ class ofp_aggregate_stats_request (object):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 44):
-      print 'Warning! ofp_aggregate_stats_request.unpack() was not passed enough bytes!'
       return binaryString
     self.match.unpack(binaryString[0:])
     (self.table_id, self._pad, self.out_port) = struct.unpack_from("!BBH", binaryString, 40)
@@ -2167,7 +2139,6 @@ class ofp_aggregate_stats_reply (object):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 24):
-      print 'Warning! ofp_aggregate_stats_reply.unpack() was not passed enough bytes!'
       return binaryString
     (self.packet_count, self.byte_count, self.flow_count) = struct.unpack_from("!QQL", binaryString, 0)
     return binaryString[24:]
@@ -2225,7 +2196,6 @@ class ofp_table_stats (object):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 64):
-      print 'Warning! ofp_table_stats.unpack() was not passed enough bytes!'
       return binaryString
     (self.table_id,) = struct.unpack_from("!B", binaryString, 0)
     self.name = binaryString[4:36].replace("\0","")
@@ -2281,7 +2251,6 @@ class ofp_port_stats_request (object):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 8):
-      print 'Warning! ofp_port_stats_request.unpack() was not passed enough bytes!'
       return binaryString
     (self.port_no,) = struct.unpack_from("!H", binaryString, 0)
     return binaryString[8:]
@@ -2336,7 +2305,6 @@ class ofp_port_stats (object):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 104):
-      print 'Warning! ofp_port_stats.unpack() was not passed enough bytes!'
       return binaryString
     (self.port_no,) = struct.unpack_from("!H", binaryString, 0)
     (self.rx_packets, self.tx_packets, self.rx_bytes, self.tx_bytes, self.rx_dropped, self.tx_dropped, self.rx_errors, self.tx_errors, self.rx_frame_err, self.rx_over_err, self.rx_crc_err, self.collisions) = struct.unpack_from("!QQQQQQQQQQQQ", binaryString, 8)
@@ -2405,7 +2373,6 @@ class ofp_queue_stats_request (object):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 8):
-      print 'Warning! ofp_queue_stats_request.unpack() was not passed enough bytes!'
       return binaryString
     (self.port_no,) = struct.unpack_from("!H", binaryString, 0)
     (self.queue_id,) = struct.unpack_from("!L", binaryString, 4)
@@ -2455,7 +2422,6 @@ class ofp_queue_stats (object):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 32):
-      print 'Warning! ofp_queue_stats.unpack() was not passed enough bytes!'
       return binaryString
     (self.port_no,) = struct.unpack_from("!H", binaryString, 0)
     (self.queue_id, self.tx_bytes, self.tx_packets, self.tx_errors) = struct.unpack_from("!LQQQ", binaryString, 4)
@@ -2537,7 +2503,6 @@ class ofp_packet_out (ofp_header):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 16):
-      print 'Warning! ofp_packet_out.unpack() was not passed enough bytes!'
       return binaryString
     ofp_header.unpack(self, binaryString[0:])
     (self.buffer_id, self.in_port, actions_len) = struct.unpack_from("!LHH", binaryString, 8)
@@ -2594,7 +2559,6 @@ class ofp_barrier_reply (ofp_header):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 8):
-      print 'Warning! ofp_barrier_reply.unpack() was not passed enough bytes!'
       return binaryString
     ofp_header.unpack(self, binaryString[0:])
     return binaryString[8:]
@@ -2635,7 +2599,6 @@ class ofp_barrier_request (ofp_header):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 8):
-      print 'Warning! ofp_barrier_request.unpack() was not passed enough bytes!'
       return binaryString
     ofp_header.unpack(self, binaryString[0:])
     return binaryString[8:]
@@ -2689,7 +2652,6 @@ class ofp_packet_in (ofp_header):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 18):
-      print 'Warning! ofp_packet_in.unpack() was not passed enough bytes!'
       return binaryString
     ofp_header.unpack(self, binaryString[0:])
     (self.buffer_id, self._total_len, self.in_port, self.reason, self._pad) = struct.unpack_from("!LHHBB", binaryString, 8)
@@ -2777,7 +2739,6 @@ class ofp_flow_removed (ofp_header):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 88):
-      print 'Warning! ofp_flow_removed.unpack() was not passed enough bytes!'
       return binaryString
     ofp_header.unpack(self, binaryString[0:])
     self.match.unpack(binaryString[8:])
@@ -2857,7 +2818,6 @@ class ofp_port_status (ofp_header):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 64):
-      print 'Warning! ofp_port_status.unpack() was not passed enough bytes!'
       return binaryString
     ofp_header.unpack(self, binaryString[0:])
     (self.reason,) = struct.unpack_from("!B", binaryString, 8)
@@ -2916,7 +2876,6 @@ class ofp_error (ofp_header):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 12):
-      print 'Warning! ofp_error.unpack() was not passed enough bytes!'
       return binaryString
     ofp_header.unpack(self, binaryString[0:])
     (self.type, self.code) = struct.unpack_from("!HH", binaryString, 8)
@@ -3035,7 +2994,6 @@ class ofp_hello (ofp_header):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 8):
-      print 'Warning! ofp_hello.unpack() was not passed enough bytes!'
       return binaryString
     ofp_header.unpack(self, binaryString[0:])
     return binaryString[8:]
@@ -3077,7 +3035,6 @@ class ofp_echo_request (ofp_header):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 8):
-      print 'Warning! ofp_echo_request.unpack() was not passed enough bytes!'
       return binaryString
     ofp_header.unpack(self, binaryString[0:])
     # Note that we trust the header to be correct here
@@ -3126,7 +3083,6 @@ class ofp_echo_reply (ofp_header):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 8):
-      print 'Warning! ofp_echo_reply.unpack() was not passed enough bytes!'
       return binaryString
     ofp_header.unpack(self, binaryString[0:])
     # Note that we trust the header to be correct here
@@ -3174,7 +3130,6 @@ class ofp_vendor_header (ofp_header):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 12):
-      print 'Warning! ofp_vendor_header.unpack() was not passed enough bytes!'
       return binaryString
     ofp_header.unpack(self, binaryString[0:])
     (self.vendor,) = struct.unpack_from("!L", binaryString, 8)
@@ -3220,7 +3175,6 @@ class ofp_vendor (ofp_header):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 12):
-      print 'Warning! ofp_vendor.unpack() was not passed enough bytes!'
       return binaryString
     ofp_header.unpack(self, binaryString[0:])
     (self.vendor,) = struct.unpack_from("!L", binaryString, 8)
@@ -3270,7 +3224,6 @@ class ofp_features_request (ofp_header):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 8):
-      print 'Warning! ofp_features_request.unpack() was not passed enough bytes!'
       return binaryString
     ofp_header.unpack(self, binaryString[0:])
     return binaryString[8:]
@@ -3309,7 +3262,6 @@ class ofp_get_config_request (ofp_header):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 8):
-      print 'Warning! ofp_get_config_request.unpack() was not passed enough bytes!'
       return binaryString
     ofp_header.unpack(self, binaryString[0:])
     return binaryString[8:]
@@ -3351,7 +3303,6 @@ class ofp_get_config_reply (ofp_header):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 12):
-      print 'Warning! ofp_get_config_reply.unpack() was not passed enough bytes!'
       return binaryString
     ofp_header.unpack(self, binaryString[0:])
     (self.flags, self.miss_send_len) = struct.unpack_from("!HH", binaryString, 8)
@@ -3398,7 +3349,6 @@ class ofp_set_config (ofp_header):
 
   def unpack (self, binaryString):
     if (len(binaryString) < 12):
-      print 'Warning! ofp_set_config.unpack() was not passed enough bytes!'
       return binaryString
     ofp_header.unpack(self, binaryString[0:])
     (self.flags, self.miss_send_len) = struct.unpack_from("!HH", binaryString, 8)
