@@ -1559,7 +1559,7 @@ ofp_flow_mod_flags_rev_map = {
 }
 
 class ofp_port_mod (ofp_header):
-  def __init__ (self):
+  def __init__ (self, **kw):
     ofp_header.__init__(self)
     self.header_type = OFPT_PORT_MOD
     self.port_no = 0
@@ -1568,6 +1568,9 @@ class ofp_port_mod (ofp_header):
     self.mask = 0
     self.advertise = 0
     self._pad = b'\x00' * 4
+    self.length = 32
+
+    initHelper(self, kw)
 
   def _assert (self):
     if not isinstance(self.hw_addr, bytes) and not isinstance(self.hw_addr, EthAddr):
