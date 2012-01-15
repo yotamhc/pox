@@ -134,6 +134,7 @@ def EventReturn (halt = False, remove = False):
   """
   return (halt, remove)
 
+EventContinue = EventReturn(halt=False, remove=False)
 
 # Event handlers can return this to stop further handling of this event
 EventHalt = EventReturn(halt=True)

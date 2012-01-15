@@ -2686,7 +2686,7 @@ ofp_packet_in_reason_rev_map = {
 }
 
 class ofp_flow_removed (ofp_header):
-  def __init__ (self):
+  def __init__ (self, **kw):
     ofp_header.__init__(self)
     self.header_type = OFPT_FLOW_REMOVED
     self.match = ofp_match()
@@ -2700,6 +2700,8 @@ class ofp_flow_removed (ofp_header):
     self._pad2 = b'\x00' * 2
     self.packet_count = 0
     self.byte_count = 0
+    
+    initHelper(self, kw)
 
   def _assert (self):
     if(not isinstance(self.match, ofp_match)):
