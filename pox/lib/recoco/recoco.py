@@ -124,7 +124,10 @@ class Task (BaseTask):
     return self.target(*self.args, **self.kwargs)
 
   def __str__ (self):
-    return "<" + self.__class__.__name__ + "/tid" + str(self.name) + ">"
+    g = self.target(*self.args, **self.kwargs):
+    g.next()
+    while True:
+      g.send((yield))
 
 
 class Scheduler (object):
