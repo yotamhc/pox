@@ -36,7 +36,7 @@ class EntityEvent (Event):
   def __init__ (self, entity):
     Event.__init__(self)
     self.entity = entity
-    
+
 class EntityJoin (EntityEvent):
   """
   An entity has been added.
