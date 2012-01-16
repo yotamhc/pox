@@ -435,7 +435,7 @@ class EventMixin (object):
     """
     return autoBindEvents(self, source, *args, **kv)
 
-  def addListeners (self, sink, prefix='', weak=False):
+  def addListeners (self, sink, prefix='', weak=False, priority=None):
     """
     Automatically subscribe sink to our events.
 
@@ -444,7 +444,7 @@ class EventMixin (object):
 
     See also: listenTo(), autoBindEvents()
     """
-    return autoBindEvents(sink, self, prefix, weak)
+    return autoBindEvents(sink, self, prefix, weak, priority)
   
   def clearHandlers(self):
     """
@@ -453,7 +453,7 @@ class EventMixin (object):
     self._eventMixin_handlers = {}
 
 
-def autoBindEvents (sink, source, prefix='', weak=False):
+def autoBindEvents (sink, source, prefix='', weak=False, priority=None):
   """
   Automatically set up listeners on sink for events raised by source.
 
@@ -500,7 +500,8 @@ def autoBindEvents (sink, source, prefix='', weak=False):
         # and it is one of the events our source triggers
         if event in events:
           # append the listener
-          listeners.append(source.addListener(events[event], a, weak))
+          listeners.append(source.addListener(events[event], a, weak=weak,
+                                              priority=priority))
           #print "autoBind: ",source,m,"to",sink
         elif len(prefix) > 0 and "_" not in event:
           print("Warning: %s found in %s, but %s not raised by %s" %
