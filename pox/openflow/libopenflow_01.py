@@ -3011,8 +3011,8 @@ ofp_queue_op_failed_code_rev_map = {
 
 #5. Symmetric Messages
 class ofp_hello (ofp_header):
-  def __init__ (self):
-    ofp_header.__init__(self)
+  def __init__ (self, **kw):
+    ofp_header.__init__(self, **kw)
     self.header_type = OFPT_HELLO
     self.length = len(self)
 
@@ -3051,8 +3051,8 @@ class ofp_hello (ofp_header):
     return outstr
 
 class ofp_echo_request (ofp_header):
-  def __init__ (self):
-    ofp_header.__init__(self)
+  def __init__ (self, **kw):
+    ofp_header.__init__(self, **kw)
     self.header_type = OFPT_ECHO_REQUEST
     self.body = []
 
@@ -3103,8 +3103,8 @@ class ofp_echo_request (ofp_header):
     return outstr
 
 class ofp_echo_reply (ofp_header):
-  def __init__ (self):
-    ofp_header.__init__(self)
+  def __init__ (self, **kw):
+    ofp_header.__init__(self, **kw)
     self.header_type = OFPT_ECHO_REPLY
     self.body = []
 
