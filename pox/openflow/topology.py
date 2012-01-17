@@ -290,13 +290,13 @@ class OpenFlowSwitch (EventMixin, Switch):
     # Skip over non-serializable data, e.g. sockets
     serializable = OpenFlowSwitch(self.dpid)
     return pickle.dumps(serializable, protocol = 0)
-  
+
   def send(self, *args, **kw):
     return self._connection.send(*args, **kw)
-  
+
   def read(self):
     return self._connection.read()
-  
+
   def __repr__ (self):
     return "<%s %s>" % (self.__class__.__name__, dpidToStr(self.dpid))
 
