@@ -138,8 +138,8 @@ class Host (Entity):
   """
   A generic Host entity.
   """
-  def __init__(self):
-    Entity.__init__(self)
+  def __init__(self,id=None):
+    Entity.__init__(self, id)
 
 class Switch (Entity):
   """
