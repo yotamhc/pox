@@ -89,6 +89,8 @@ class ConnectionClosed (Event):
     Event.__init__(self)
     self.con = connection
 
+class MessengerListening(Event):
+  pass
 
 class ConnectionStarted (Event):
   def __init__ (self, connection):
