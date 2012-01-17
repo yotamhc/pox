@@ -194,11 +194,12 @@ class OpenFlowSwitch (EventMixin, Switch):
     EventMixin.__init__(self)
     self.dpid = dpid
     self.ports = {}
-    self.flow_table = FlowTable()
+    self.flow_table = NOMFlowTable()
     self.capabilities = 0
     self._connection = None
     self._listeners = []
     self._reconnectTimeout = None # Timer for reconnection
+    self.xid_generator = count.count( (dpid & 0xFFFF) << 16 + 1)
 
   def _setConnection (self, connection, ofp=None):
     ''' ofp - a FeaturesReply message '''
@@ -227,6 +228,10 @@ class OpenFlowSwitch (EventMixin, Switch):
         del self.ports[p]
     if connection is not None:
       self._listeners = self.listenTo(connection, prefix="con")
+      self.raiseEvent(SwitchConnectionUp(switch=self, connection = connection))
+    else:
+      self.raiseEvent(SwitchConnectionDown(switch=self))
+
 
   def _timer_ReconnectTimeout (self):
     """ Called if we've been disconnected for RECONNECT_TIMEOUT seconds """
@@ -270,7 +275,11 @@ class OpenFlowSwitch (EventMixin, Switch):
       if entity in p:
         return p
     return None
-  
+
+  @property
+  def connected(self):
+    return self._connection != None
+
   def installFlow(self, match, actions):
     """ install a flow in the local flow table as well as into the associated switch """
 
