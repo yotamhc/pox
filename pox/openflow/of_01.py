@@ -383,6 +383,7 @@ class Connection (EventMixin):
     PortStatus,
     FlowRemoved,
     PacketIn,
+    ErrorIn,
     BarrierIn,
     RawStatsReply,
     SwitchDescReceived,
