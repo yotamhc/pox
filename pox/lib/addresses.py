@@ -111,7 +111,27 @@ class EthAddr (object):
       self._value = b'\x00' * 6
     else:
       raise RuntimeError("Expected ethernet address to be a string of 6 raw bytes or some hex")
-    
+
+  def isGlobal (self):
+    """
+    Returns True if this is a globally unique (OUI enforced) address.
+    """
+    return not self.isLocal()
+
+  def isLocal (self):
+    """
+    Returns True if this is a locally-administered (non-global) address.
+    """
+    return True if (ord(self._value[0]) & 2) else False
+
+  @property
+  def is_local (self):
+    return self.isLocal()
+
+  @property
+  def is_global (self):
+    return self.isGlobal()
+
   def isMulticast (self):
     """
     Returns True if this is a multicast address.
