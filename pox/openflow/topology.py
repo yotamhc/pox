@@ -280,9 +280,9 @@ class OpenFlowSwitch (EventMixin, Switch):
   def connected(self):
     return self._connection != None
 
-  def installFlow(self, match, actions):
+  def installFlow(self, **kw):
     """ install a flow in the local flow table as well as into the associated switch """
-
+    self.flow_table.install(TableEntry(**kw))
 
   def serialize (self):
     # Skip over non-serializable data, e.g. sockets
