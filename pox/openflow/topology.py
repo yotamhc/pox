@@ -32,6 +32,7 @@ from pox.core import core
 from pox.topology.topology import *
 from pox.openflow.flow_table import *
 from pox.openflow.discovery import *
+from pox.openflow.flow_table import FlowTable
 from pox.lib.util import dpidToStr
 from pox.lib.addresses import *
 
@@ -101,7 +102,7 @@ class OpenFlowTopology (EventMixin):
       if sw.connection is not None:
         log.warn("Switch %s connected, but... it's already connected!" %
                  (dpidToStr(event.dpid),))
-    sw._setConnection(event.connection, event.ofp)
+    #sw._setConnection(event.connection, event.ofp)
     log.info("Switch " + dpidToStr(event.dpid) + " connected")
     if add:
       self.topology.addEntity(sw)
