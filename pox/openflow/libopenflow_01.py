@@ -3472,7 +3472,7 @@ def _unpack_actions (b, length, offset=0):
   offset, if specified is where in b to start decoding
   returns ([Actions], next_offset)
   """
-  if (len(b) - offset) < length: return (actions, offset)
+  if (len(b) - offset) < length: return ([], offset)
   actions = []
   end = length + offset
   while offset < end:
