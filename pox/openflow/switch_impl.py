@@ -53,8 +53,7 @@ class SwitchImpl(EventMixin):
     self.n_buffers = n_buffers
     ##Number of tables
     self.n_tables= n_tables
-    # TODO: don't assume a single table
-    # Well it's OF1.0 so there /is/ only one switch table in the OpenFlow world
+    # Note that there is one switch table in the OpenFlow 1.0 world
     self.table = SwitchFlowTable()
     # buffer for packets during packet_in
     self.packet_buffer = []
@@ -82,7 +81,7 @@ class SwitchImpl(EventMixin):
        # TODO: many more packet types to process
     }
     if not (connection != None) ^ (socket != None):
-      raise AttributeError("Must give /either/ connection or socket (not none, not both)")
+      raise AttributeError("Must give connection XOR socket")
     if socket != None:
       ##Reference to connection with controller
       self._connection = ControllerConnection(socket, ofp_handlers)

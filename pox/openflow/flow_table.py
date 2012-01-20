@@ -58,6 +58,7 @@ class TableEntry (object):
     else:
       return match.matches_with_wildcards(self.match)
 
+  # Rename "touch_entry"?
   def touch_packet(self, byte_count, now=None):
     """ update the counters and expiry timer of this entry for a packet with a given byte count"""
     if now==None: now = time.time()
@@ -119,7 +120,7 @@ class FlowTable (EventMixin):
     self.raiseEvent(FlowTableModification(removed=[entry]))
 
 
-  def entries_for_port(self, port_no):
+  def output_entries_for_port(self, port_no):
     entries = []
     for entry in self._table:
       actions = entry.actions
@@ -128,7 +129,7 @@ class FlowTable (EventMixin):
         if type(last_action) == ofp_action_output:
           outgoing_port = last_action.port.port_no
           if outgoing_port == port_no:
-            entries.apend(entry)
+            entries.append(entry)
     return entries
 
   def matching_entries(self, match, priority=0, strict=False):
