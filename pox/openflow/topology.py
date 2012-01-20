@@ -30,11 +30,13 @@ import libopenflow_01 as of
 from pox.openflow import *
 from pox.core import core
 from pox.topology.topology import *
+from pox.openflow.flow_table import *
 from pox.openflow.discovery import *
 from pox.lib.util import dpidToStr
 from pox.lib.addresses import *
 
 import pickle
+import itertools
 
 # After a switch disconnects, it has this many seconds to reconnect in
 # order to reactivate the same OpenFlowSwitch object.  After this, if
@@ -199,7 +201,7 @@ class OpenFlowSwitch (EventMixin, Switch):
     self._connection = None
     self._listeners = []
     self._reconnectTimeout = None # Timer for reconnection
-    self.xid_generator = count.count( (dpid & 0xFFFF) << 16 + 1)
+    self.xid_generator = itertools.count( (dpid & 0xFFFF) << 16 + 1)
 
   def _setConnection (self, connection, ofp=None):
     ''' ofp - a FeaturesReply message '''
