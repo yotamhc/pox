@@ -224,6 +224,12 @@ class NOMFlowTable(EventMixin):
     self.pending_op_to_barrier = {}
 
     self.listenTo(switch)
+    
+  def __setitem__(self, match, actions):
+    """ Enables the user to do:
+    NOMTable[pkt.match] = [ofp_action_out(port=port)]
+    """
+    self.install([TableEntry(match=match, actions=actions)]) 
 
   def install(self, entries=[]):
     """ asynchronously install entries in the flow table. will raise a FlowTableModification event when
