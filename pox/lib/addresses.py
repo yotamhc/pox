@@ -192,6 +192,11 @@ class EthAddr (object):
   def __len__ (self):
     return 6
 
+  def __setattr__ (self, a, v):
+    if hasattr(self, '_value'):
+      raise TypeError("This object is immutable")
+    object.__setattr__(self, a, v)
+
 
 class IPAddr (object):
   """
@@ -292,6 +297,12 @@ class IPAddr (object):
 
   def __len__ (self):
     return 4
+
+  def __setattr__ (self, a, v):
+    if hasattr(self, '_value'):
+      raise TypeError("This object is immutable")
+    object.__setattr__(self, a, v)
+
 
 
 def parseCIDR (addr, infer=True):
