@@ -453,7 +453,7 @@ class Connection (EventMixin):
     """
     try:
       if self.dpid != None:
-        openflowHub.raiseEvent(ConnectionDown(self))
+        self.ofhub.raiseEvent(ConnectionDown(self))
     except:
       self.err("ConnectionDown event caused exception")
     """

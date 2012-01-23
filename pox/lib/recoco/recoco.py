@@ -127,10 +127,7 @@ class Task (BaseTask):
       g.send((yield))
 
   def __str__ (self):
-    g = self.target(*self.args, **self.kwargs)
-    g.next()
-    while True:
-      g.send((yield))
+    return "<" + self.__class__.__name__ + "/tid" + str(self.name) + ">"
 
 
 class Scheduler (object):
@@ -401,6 +398,7 @@ class Sleep (BlockingOperation):
       return
     scheduler._selectHub.registerTimer(task, self._t, True) # A bit ugly
 
+
 class Select (BlockingOperation):
   """
   Should be very similar to Python select.select()
@@ -411,6 +409,7 @@ class Select (BlockingOperation):
 
   def execute (self, task, scheduler):
     scheduler._selectHub.registerSelect(task, *self._args, **self._kw)
+
 
 defaultRecvFlags = 0
 try:
