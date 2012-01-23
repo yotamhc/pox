@@ -30,9 +30,8 @@ import libopenflow_01 as of
 from pox.openflow import *
 from pox.core import core
 from pox.topology.topology import *
-from pox.openflow.flow_table import *
 from pox.openflow.discovery import *
-from pox.openflow.flow_table import FlowTable
+from pox.openflow.flow_table import NOMFlowTable
 from pox.lib.util import dpidToStr
 from pox.lib.addresses import *
 
@@ -102,7 +101,7 @@ class OpenFlowTopology (EventMixin):
       if sw._connection is not None:
         log.warn("Switch %s connected, but... it's already connected!" %
                  (dpidToStr(event.dpid),))
-    #sw._setConnection(event.connection, event.ofp)
+    sw._setConnection(event.connection, event.ofp)
     log.info("Switch " + dpidToStr(event.dpid) + " connected")
     if add:
       self.topology.addEntity(sw)
@@ -165,7 +164,6 @@ class OpenFlowPort (Port):
   def __repr__ (self):
     return "<Port #" + str(self.number) + ">"
 
-
 class OpenFlowSwitch (EventMixin, Switch):
   """
   OpenFlowSwitches are Topology entities (inheriting from topology.Switch)
@@ -185,19 +183,21 @@ class OpenFlowSwitch (EventMixin, Switch):
   _eventMixin_events = set([
     SwitchJoin, # Defined in pox.topology
     SwitchLeave,
+    SwitchConnectionUp,
+    SwitchConnectionDown,
 
     PortStatus, # Defined in libopenflow_01
     FlowRemoved,
     PacketIn,
     BarrierIn,
   ])
-  
+
   def __init__ (self, dpid):
     Switch.__init__(self)
     EventMixin.__init__(self)
     self.dpid = dpid
     self.ports = {}
-    self.flow_table = NOMFlowTable()
+    self.flow_table = NOMFlowTable(self)
     self.capabilities = 0
     self._connection = None
     self._listeners = []

@@ -66,7 +66,6 @@ def handle_FEATURES_REPLY (con, msg):
   connecting = con.connect_time == None
   con.features = msg
   con.dpid = msg.datapath_id
-  openflowHub._connections[con.dpid] = con
 
   if not connecting:
     con.ofhub._connect(con)
@@ -81,7 +80,6 @@ def handle_FEATURES_REPLY (con, msg):
     return
   con.ofhub = hub
   con.ofhub._connect(con)
-
   #connections[con.dpid] = con
 
   barrier = of.ofp_barrier_request()
@@ -104,9 +102,9 @@ def handle_FEATURES_REPLY (con, msg):
 
   con.addListener(BarrierIn, finish_connecting)
 
-  if conf.ofhub:
+  if con.ofhub:
     if con.ofhub.miss_send_len is not None:
-      con.send(of.ofp_switch_config(miss_send_len = openflowHub.miss_send_len))
+      con.send(of.ofp_switch_config(miss_send_len = con.ofhub.miss_send_len))
     if con.ofhub.clear_flows_on_connect:
       con.send(of.ofp_flow_mod(match=of.ofp_match(), command=of.OFPFC_DELETE))
       
@@ -141,7 +139,7 @@ def handle_ERROR_MSG (con, msg): #A
 
 def handle_BARRIER (con, msg):
   if con.ofhub:
-    conf.ofhub.raiseEventNoErrors(BarrierIn, con, msg)
+    con.ofhub.raiseEventNoErrors(BarrierIn, con, msg)
   con.raiseEventNoErrors(BarrierIn, con, msg)
 
 #TODO: def handle_VENDOR (con, msg): #S
