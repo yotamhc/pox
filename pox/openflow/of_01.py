@@ -448,7 +448,7 @@ class Connection (EventMixin):
       self.msg("disconnecting")
     self.disconnected = True
     try:
-      if(self.ofhub)
+      if(self.ofhub):
         self.ofhub._disconnect(self.dpid)
     except:
       pass
@@ -460,7 +460,7 @@ class Connection (EventMixin):
       self.err("ConnectionDown event caused exception")
     """
     if self.dpid != None:
-      if self.ofhub
+      if self.ofhub:
         self.ofhub.raiseEventNoErrors(ConnectionDown(self))
 
     try:
