@@ -25,6 +25,8 @@ events from other parts of the openflow substem (such as discovery), and
 uses them to populate and manipulate Topology.
 """
 
+import itertools
+
 from pox.lib.revent.revent import *
 import libopenflow_01 as of
 from pox.openflow import *
@@ -44,7 +46,6 @@ import itertools
 RECONNECT_TIMEOUT = 30
 
 log = core.getLogger()
-
 
 class OpenFlowTopology (EventMixin):
   """
