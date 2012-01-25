@@ -1,5 +1,5 @@
 """
-This module mocks out openflow switches. 
+This module mocks out openflow switches.
 
 This is only for simulation, not emulation. For simluation, we run everything
 in the same process, and mock out switch behavior. This way it's super easy
@@ -25,55 +25,55 @@ from pox.core import core
 # TODO: model hosts in the network!
 
 class MockSocket(object):
-  """ 
+  """
   Send bytes directly from object to object, rather than opening a real socket
-  
+
   Requires that both ends of the socket maintain a Connection object
   """
   def __init__(self, receiver_connection=None):
     self.receiver_connection = receiver_connection
     # Single element queue
-    self.read_buffer = "" 
+    self.read_buffer = ""
     # In case the user tries to send() before receiver_connection is set. This
     # is a bit of a hack around for a mutual dependency between sender and receiver
     # sockets when trying to initialize new connections.
-    self.send_queue = []  
-    
+    self.send_queue = []
+
   def set_receiver_connection(self, receiver_connection):
     self.receiver_connection = receiver_connection
     for unsent_msg in self.send_queue:
       self.send(unsent_msg)
-      
+
     self.send_queue = []
-    
+
   def send(self, msg):
     msg_len = len(msg)
     # TODO: let fuzzer interpose on this transfer, to delay or drop packets
     if self.receiver_connection is None:
       # receiver_connection hasn't been set yet
-      self.send_queue.append(msg) 
+      self.send_queue.append(msg)
       return msg_len # Fake it -- pretend we sent the message already
-      
+
     # Push the bits
     self.receiver_connection.sock.read_buffer = msg
     # Cause them to read the bits
     self.receiver_connection.read()
     return msg_len
-    
+
   def recv(self, len):
     msg = self.read_buffer
     self.read_buffer = ""
     return msg
-  
+
   def shutdown(self, sig=None):
     pass
-  
+
   def close(self):
     pass
-  
+
   def fileno(self):
     return -1
-  
+
 class MockOpenFlowSwitch (OpenFlowSwitch):
   """
   NOTE: /not/ a mock switch implementation, only a mock NOM entity.
@@ -87,7 +87,7 @@ class MockOpenFlowSwitch (OpenFlowSwitch):
     self.switch_impl = None
     self.log = core.getLogger("nom_" + self.name)
     self.flow_table = NOMFlowTable()
-    
+
   def connect(self, ofp_phy_ports):
     """ Connect to the underlying switch implementation """
     # Instantiate the Switch Implementation here. We don't use self.switch_impl
@@ -95,34 +95,34 @@ class MockOpenFlowSwitch (OpenFlowSwitch):
     # object as in the normal OpenFlowSwitch implementation.
     self.switch_impl = SwitchImpl(self.dpid, socket=MockSocket(), name=self.name, ports=ofp_phy_ports)
     self.ofp_phy_ports = None
-    
+
     # Note that OpenFlowSwitch._setConnection won't be called externally,
     # (at least in simulation mode), since pox.core isn't raising any
-    # ConnectionUp events. To make sure that self.capabilities et al are 
+    # ConnectionUp events. To make sure that self.capabilities et al are
     # set properly, instead instantiate our own Connection object here.
-    # Instantiating a Connection object will cause a ofp_hello message to 
+    # Instantiating a Connection object will cause a ofp_hello message to
     # be sent to the MockSwitchImpl. When the MockSwitchImpl replies, the
     # Connection will send a features request. Upon receiving the features
     # request, we call OpenFlowSwitch._setConnection to set
     # self.capabilities et al as usual.
-    
-    # In case we are re-connecting with the switch, double check 
+
+    # In case we are re-connecting with the switch, double check
     # that switch_impl.socket.receiver_connection is None
     self.switch_impl._connection.sock.receiver_connection = None
     # This will initiate the handshake
     connection = Connection(MockSocket(self.switch_impl._connection))
-    # Since switch_impl.socket.receiver_connection hasn't been set, 
+    # Since switch_impl.socket.receiver_connection hasn't been set,
     # switch_impl will not immediately reply to the OFP_HELLO. This gives us
     # the opportunity to register a ConnectionUp handler before the handshake
-    # is complete. 
+    # is complete.
     connection.addListener(ConnectionUp, self._handle_ConnectionUp)
     # Now set switch_impl.socket.receiver_connection to us
     self.switch_impl._connection.sock.set_receiver_connection(connection)
     # Now the handshake should complete (instantaneously)
 
-  def _handle_ConnectionUp(self, event):    
-    self._setConnection(event.connection, event.ofp) 
-    
+  def _handle_ConnectionUp(self, event):
+    self._setConnection(event.connection, event.ofp)
+
   def fail(self):
     if self.failed:
       self.log.warn("Switch already failed")
@@ -130,13 +130,13 @@ class MockOpenFlowSwitch (OpenFlowSwitch):
     # TODO: depending on the type of failure, a real switch failure
     # might not lead to an immediate disconnect
     self._connection.disconnect()
-    
+
   def recover(self):
     if not self.failed:
       self.log.warn("Switch already up")
     self.failed = False
     self.connect(self.switch_impl.ports.values())
-    
+
   def serialize(self):
     # Skip over non-serializable data, e.g. sockets
     # TODO: is self.log going to be a problem?
@@ -147,11 +147,11 @@ class MockOpenFlowSwitch (OpenFlowSwitch):
     if self.switch_impl:
       serializable.ofp_phy_ports = self.switch_impl.ports.values()
     return pickle.dumps(serializable, protocol=0)
-  
+
 class Link():
   """
   Temporary stand in for Murphy's graph-library for the NOM.
-   
+
   Note: Directed!
   """
   def __init__(self, start_switch_impl, start_port, end_switch_impl, end_port):
@@ -159,7 +159,7 @@ class Link():
     self.start_port = start_port
     self.end_switch_impl = end_switch_impl
     self.end_port = end_port
-          
+
 class Message (object):
   """ So we can track a message throughout the network """
   def __init__(self, msg):

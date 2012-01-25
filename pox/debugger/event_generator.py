@@ -7,22 +7,22 @@ from pox.lib.packet.icmp import *
 
 class EventGenerator (object):
   """
-  Generate sensible randomly generated (openflow) events 
+  Generate sensible randomly generated (openflow) events
   """
-  
+
   def __init__(self, random):
     self.random = random
-    
+
     self._event_generators = {
       PacketIn : self.packet_in
     }
-    
+
   def generate(self, eventType, switch):
     if eventType not in self._event_generators:
       raise "Unknown event type %s" % str(eventType)
-    
+
     return self._event_generators[eventType](switch)
-       
+
   def packet_in(self, switch):
     # randomly choose an in_port.
     if len(switch.ports) == 0:
@@ -42,15 +42,15 @@ class EventGenerator (object):
     ping.payload = "PingPing" * 6
     ipp.payload = ping
     e.payload = ipp
-    
+
     buffer_id = self.random.randint(0,0xFFFFFFFF)
     reason = None
-    
+
     pkt = ofp_packet_in(data = e.pack(),
                         in_port = in_port.number,
                         buffer_id = buffer_id,
                         reason = reason)
-    
+
     # TODO: rather than returning an Event, instead call
     # switch.send(pkt), so that this is an end-to-end test (more valuable,
     # even if the switch is mocked out.)
