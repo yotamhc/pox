@@ -51,7 +51,7 @@ class EntityJoin (EntityEvent):
 
 class EntityLeave (EntityEvent):
   """
-  An entity has been removed 
+  An entity has been removed
 
   Note that if there is a more specific leave event defined for a particular
   entity, (e.g., SwitchLeave), this event will not be fired.
@@ -63,7 +63,7 @@ class EntityLeave (EntityEvent):
 
 class SwitchEvent (EntityEvent): pass
 
-class SwitchJoin (SwitchEvent): 
+class SwitchJoin (SwitchEvent):
   """
   As opposed to ConnectionUp, SwitchJoin occurs over large time scales
   (e.g. an administrator physically moving a switch).
@@ -71,7 +71,7 @@ class SwitchJoin (SwitchEvent):
   def __init__ (self, switch):
     SwitchEvent.__init__(self, switch)
     self.switch = switch
-    
+
 class SwitchLeave (SwitchEvent):
   """
   As opposed to ConnectionDown, SwitchLeave occurs over large time scales
@@ -100,10 +100,10 @@ class Update (Event):
     self.event = event
 
 class Entity (object):
-  """ 
-  Note that the Entity class is intentionally simple; It only serves as a 
+  """
+  Note that the Entity class is intentionally simple; It only serves as a
   convenient SuperClass type.
-  
+
   It's up to subclasses to implement specific functionality (e.g.
   OpenFlow1.0 switch functionality).  The purpose of this design decision
   is to prevent protocol specific details from being leaked into this
@@ -118,15 +118,16 @@ class Entity (object):
   # identifiers.
   _next_id = 1
   _all_ids = set()
-  
+
   def __init__ (self, id=None):
-    if id and id in Entity._all_ids:
-      raise Exception("ID %s already taken" % str(id))
+    if id:
+      if id in Entity._all_ids:
+        raise Exception("ID %s already taken" % str(id))
     else:
       while Entity._next_id in Entity._all_ids:
         Entity._next_id += 1
       id = Entity._next_id
-    
+
     Entity._all_ids.add(id)
     self.id = id
     
@@ -149,8 +150,11 @@ class Switch (Entity):
   Subclassed by protocol-specific switch classes,
   e.g. pox.openflow.topology.OpenFlowSwitch
   """
-  pass
-  
+  def __init__(self, id=None):
+    # Switches often have something more meaningful to use as an ID
+    # (e.g., a DPID or MAC address), so they take it as a parameter.
+    Entity.__init__(self, id)
+
 class Port (Entity):
   def __init__ (self, num, hwAddr, name):
     Entity.__init__(self)
@@ -179,7 +183,7 @@ class Topology (EventMixin):
 
     Update
   ]
-  
+
   _core_name = "topology" # We want to be core.topology
 
   def __init__ (self, name="topology"):
@@ -187,8 +191,8 @@ class Topology (EventMixin):
     self._entities = {}
     self.name = name
     self.log = core.getLogger(name)
-    
-    # If a client registers a handler for therse events after they have
+
+    # If a client registers a handler for these events after they have
     # already occurred, we promise to re-issue them to the newly joined
     # client.
     self._event_promises = {
@@ -208,7 +212,8 @@ class Topology (EventMixin):
   def removeEntity (self, entity):
     del self._entities[entity.id]
     self.log.info(str(entity) + " left")
-    if isinstance(entity, Switch): self.raiseEvent(SwitchLeave, entity)
+    if isinstance(entity, Switch):
+      self.raiseEvent(SwitchLeave, entity)
     elif isinstance(entity, Host):
       self.raiseEvent(HostLeave, entity)
     else:
@@ -242,7 +247,7 @@ class Topology (EventMixin):
     """
     if eventType in self._event_promises:
       self._event_promises[eventType](handler)
-    
+
     return EventMixin.addListener(self, eventType, handler, once=once,
                                   weak=weak, priority=priority,
                                   byName=byName)
@@ -296,16 +301,15 @@ class Topology (EventMixin):
     """ Trigger the SwitchJoin handler for all pre-existing switches """
     for switch in self.getEntitiesOfType(Switch, True):
       handler(SwitchJoin(switch))
-      
+
   def __len__(self):
     return len(self._entities)
-    
+
   def __str__(self):
     # TODO: display me graphically
     strings = []
     strings.append("topology (%d total entities)" % len(self._entities))
     for id,entity in self._entities.iteritems():
-      strings.append("%s %s" % (str(id), str(entity))) 
-      
-    return '\n'.join(strings)
+      strings.append("%s %s" % (str(id), str(entity)))
 
+    return '\n'.join(strings)
