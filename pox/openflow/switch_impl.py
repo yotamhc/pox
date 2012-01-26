@@ -39,8 +39,8 @@ class SwitchImpl(EventMixin):
   _eventMixin_events = set([SwitchDpPacketOut])
 
   # ports is a list of ofp_phy_ports
-  def __init__(self, dpid, socket=None, name=None, ports=4, miss_send_len=128,
-      n_buffers=100, n_tables=1, capabilities=None, connection=None):
+  def __init__(self, dpid, name=None, ports=4, miss_send_len=128,
+      n_buffers=100, n_tables=1, capabilities=None):
     """Initialize switch"""
     ##Datapath id of switch
     self.dpid = dpid
@@ -67,7 +67,7 @@ class SwitchImpl(EventMixin):
     for port in ports:
       self.ports[port.port_no] = port
     ## (OpenFlow Handler map)
-    ofp_handlers = {
+    self.ofp_handlers = {
        # Reactive handlers
        ofp_type_rev_map['OFPT_HELLO'] : self._receive_hello,
        ofp_type_rev_map['OFPT_ECHO_REQUEST'] : self._receive_echo,
@@ -75,25 +75,27 @@ class SwitchImpl(EventMixin):
        ofp_type_rev_map['OFPT_FLOW_MOD'] : self._receive_flow_mod,
        ofp_type_rev_map['OFPT_PACKET_OUT'] : self._receive_packet_out,
        ofp_type_rev_map['OFPT_BARRIER_REQUEST'] : self._receive_barrier_request,
+       ofp_type_rev_map['OFPT_SET_CONFIG'] : self._receive_set_config,
 
        # Proactive responses
        ofp_type_rev_map['OFPT_ECHO_REPLY'] : self._receive_echo_reply
        # TODO: many more packet types to process
     }
-    if not (connection != None) ^ (socket != None):
-      raise AttributeError("Must give connection XOR socket")
-    if socket != None:
-      ##Reference to connection with controller
-      self._connection = ControllerConnection(socket, ofp_handlers)
-    else:
-      connection.ofp_handlers = ofp_handlers
-      self._connection = connection
+    self._connection = None
 
     ##Capabilities
     if (isinstance(capabilities, SwitchCapabilities)):
       self.capabilities = capabilities
     else:
       self.capabilities = SwitchCapabilities(miss_send_len)
+
+  def set_socket(self, socket):
+    self._connection = ControllerConnection(socket, self.ofp_handlers)
+    return self._connection
+
+  def set_connection(self, connection):
+    connection.ofp_handlers = self.ofp_handlers
+    self._connection = connection
 
   def demux_openflow(self, raw_bytes):
     pass
@@ -154,6 +156,9 @@ class SwitchImpl(EventMixin):
     self.log.debug("Barrier request %s %s" % (self.name, str(packet)))
     msg = ofp_barrier_reply(xid = packet.xid)
     self._connection.send(msg)
+
+  def _receive_set_config(self, config):
+    self.log.debug("Set  config %s %s" % (self.name, str(packet)))
 
   # ==================================== #
   #    Proactive OFP processing          #
@@ -305,6 +310,9 @@ class SwitchImpl(EventMixin):
         raise NotImplementedError("Unknown action type: %x " % type)
       handler_map[action.type](action, packet)
 
+  def __repr__(self):
+    return "SwitchImpl(dpid=%d, num_ports=%d)" % (self.dpid, len(self.ports))
+
 class ControllerConnection (object):
   # Unlike of_01.Connection, this is persistent (at least until we implement a proper
   # recoco Connection Listener loop)
@@ -327,6 +335,7 @@ class ControllerConnection (object):
     self.buf = ''
     ControllerConnection.ID += 1
     self.ID = ControllerConnection.ID
+    self.log = core.getLogger("ControllerConnection(id=%d)" % self.ID)
     ## OpenFlow Message map
     self.ofp_msgs = make_type_to_class_table()
     ## Hash from ofp_type -> handler(packet)
