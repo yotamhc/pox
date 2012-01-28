@@ -130,10 +130,10 @@ class Entity (object):
 
     Entity._all_ids.add(id)
     self.id = id
-    
+
   def serialize(self):
     return pickle.dumps(self, protocol = 0)
-  
+
   @classmethod
   def deserialize(cls):
     return pickle.loads(cls, protocol = 0)
@@ -161,14 +161,14 @@ class Port (Entity):
     self.number = num
     self.hwAddr = EthAddr(hwAddr)
     self.name = name
-    
+
 class Controller (Entity):
   def __init__(self, name, handshake_complete=False):
     self.id = name
     # TODO: python aliases?
     self.name = name
     self.handshake_complete = handshake_complete
-    
+
   def handshake_completed(self):
     self.handshake_complete = True
 
@@ -261,11 +261,11 @@ class Topology (EventMixin):
     if type(event) is not Update:
       EventMixin.raiseEvent(self, Update(event))
     return rv
-  
+
   def serialize (self):
     """
     Picklize our current entities.
-    
+
     Returns a hash: { id -> pickled entitiy }
     """
     id2entity = {}
@@ -273,7 +273,7 @@ class Topology (EventMixin):
       entity = self._entities[id]
       id2entity[id] = entity.serialize()
     return id2entity
-  
+
   def deserializeAndMerge (self, id2entity):
     """
     Given the output of topology.serialize(), deserialize each entity, and:
@@ -289,9 +289,9 @@ class Topology (EventMixin):
         entity.id = int(entity.id)
       except ValueError:
         pass
-      
+
       existing_entity = self.getEntityByID(entity.id)
-      if existing_entity: 
+      if existing_entity:
         self.log.debug("New metadata for %s: %s " % (str(existing_entity), str(entity)))
         # TODO: define an Entity.merge method (need to do something about his update!)
       else:
