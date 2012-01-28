@@ -199,6 +199,9 @@ class ofp_phy_port (object):
     outstr += prefix + 'peer: ' + str(self.peer) + '\n'
     return outstr
 
+  def __repr__(self):
+    return self.show()
+
 ofp_port_config_rev_map = {
   'OFPPC_PORT_DOWN'    : 1,
   'OFPPC_NO_STP'       : 2,

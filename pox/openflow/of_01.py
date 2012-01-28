@@ -360,9 +360,9 @@ deferredSender = DeferredSender()
 
 class DummyOFHub (object):
   def raiseEventNoErrors (self, event, *args, **kw):
-    log.warning("%s raised on dummy OpenFlow hub")
+    log.warning("%s raised on dummy OpenFlow hub" % event)
   def raiseEvent (self, event, *args, **kw):
-    log.warning("%s raised on dummy OpenFlow hub")
+    log.warning("%s raised on dummy OpenFlow hub" % event)
   def _disconnect (self, dpid):
     log.warning("%s disconnected on dummy OpenFlow hub",
                 pox.lib.util.dpidToStr(dpid))
@@ -535,6 +535,7 @@ class Connection (EventMixin):
       # OpenFlow parsing occurs here:
       ofp_type = ord(self.buf[1])
       packet_length = ord(self.buf[2]) << 8 | ord(self.buf[3])
+      log.debug("Buffer length: %d, packet_length: %d, classes: %s" % (l, packet_length, classes[ofp_type] if packet_length <= l else "None"))
       if packet_length > l: break
       msg = classes[ofp_type]()
       msg.unpack(self.buf)

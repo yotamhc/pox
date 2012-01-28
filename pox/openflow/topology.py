@@ -194,6 +194,9 @@ class OpenFlowSwitch (EventMixin, Switch):
   ])
 
   def __init__ (self, dpid):
+    if not dpid:
+      raise AssertionError("OpenFlowSwitch should have dpid")
+
     Switch.__init__(self, id=dpid)
     EventMixin.__init__(self)
     self.dpid = dpid
