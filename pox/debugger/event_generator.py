@@ -19,7 +19,7 @@ class EventGenerator (object):
 
   def generate(self, eventType, switch):
     if eventType not in self._event_generators:
-      raise "Unknown event type %s" % str(eventType)
+      raise AttributeError("Unknown event type %s" % str(eventType))
 
     return self._event_generators[eventType](switch)
 

@@ -1,7 +1,7 @@
 
 from pox.core import core
 from pox.openflow.libopenflow_01 import *
-from fuzzer_entities import *
+from debugger_entities import *
 
 import xml.etree.ElementTree as ET
 import os

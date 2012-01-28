@@ -1,4 +1,4 @@
 def launch (num_controllers=1):
-  import fuzzer
+  import debugger
   from pox.core import core
-  core.registerNew(fuzzer.FuzzTester, num_controllers)
+  core.registerNew(debugger.FuzzTester, num_controllers)

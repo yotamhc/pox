@@ -20,12 +20,12 @@ class MockSocket:
     """
     return self.sending.send(data)
 
-  def recv(self):
+  def recv(self, max_size=None):
     """ receive data on this sockect. If no data is available to be received, return "".
         NOTE that this is non-standard socket behavior and should be changed to mimic either
         blocking on non-blocking socket semantics
     """
-    return self.receiving.recv()
+    return self.receiving.recv(max_size)
 
   def set_on_ready_to_recv(self, on_ready):
     """ set a handler function on_ready(socket, size) to be called when data is available
@@ -72,18 +72,34 @@ class MessageChannel(object):
     # Single element queue
     self.buffer = ""
     self.on_data = None
+    self.on_data_running = True
 
   def send(self, msg):
     self.buffer += msg
-    if(self.on_data):
-      self.on_data(self, len(self.buffer))
-
+    self._trigger_on_data()
     return len(msg)
 
-  def recv(self):
+  def _trigger_on_data(self):
+    if self.on_data_running:
+      # avoid recursive calls to on_data
+      return
+
+    while len(self.buffer) > 0:
+      if self.on_data:
+        self.on_data_running = True
+        self.on_data(self, len(self.buffer))
+        self.on_data_running = False
+      else:
+        break
+
+  def recv(self, max_size=None):
     """ retrieve and return the data stored in this channel's buffer. If buffer is empty, return "" """
-    msg = self.buffer
-    self.buffer = ""
+    if max_size and max_size < len(self.buffer):
+      msg = self.buffer[0:max_size]
+      self.buffer = self.buffer[max_size:]
+    else:
+      msg = self.buffer
+      self.buffer = ""
     return msg
 
   def is_empty(self):
