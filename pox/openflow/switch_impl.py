@@ -158,7 +158,7 @@ class SwitchImpl(EventMixin):
     self._connection.send(msg)
 
   def _receive_set_config(self, config):
-    self.log.debug("Set  config %s %s" % (self.name, str(packet)))
+    self.log.debug("Set  config %s %s" % (self.name, str(config)))
 
   # ==================================== #
   #    Proactive OFP processing          #
@@ -416,6 +416,10 @@ class ControllerConnection (object):
         #              self,self,("\n" + str(self) + " ").join(str(msg).split('\n')))
         continue
     return True
+
+  def disconnect(self):
+    # not yet implemented
+    pass
 
   def __str__ (self):
     return "[Con " + str(self.ID) + "]"
