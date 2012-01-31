@@ -25,24 +25,25 @@
 
 ''''echo -n
 export OPT="-O"
+export FLG=""
 if [[ "$(basename $0)" == "debug-pox.py" ]]; then
   export OPT=""
+  export FLG="--debug"
 fi
 
 if [ -x pypy/bin/pypy ]; then
-  exec pypy/bin/pypy $OPT "$0" "$@"
+  exec pypy/bin/pypy $OPT "$0" $FLG "$@"
 fi
 
 if [ "$(type -P python2.7)" != "" ]; then
-  exec python2.7 $OPT "$0" "$@"
+  exec python2.7 $OPT "$0" $FLG "$@"
 fi
-exec python $OPT "$0" "$@"
+exec python $OPT "$0" $FLG "$@"
 '''
 
 from pox.core import core
-import pox.openflow as of
-import pox.openflow.of_01 as of_01
-import pox.debugger as debugger
+import pox.openflow
+import pox.openflow.of_01
 
 # Turn on extra info for event exceptions
 import pox.lib.revent as revent
@@ -275,7 +276,7 @@ def pre_startup ():
   process_options()
 
   if enable_openflow:
-    of.launch() # Always launch OpenFlow
+    pox.openflow.launch() # Default OpenFlow launch
 
   return True
 
@@ -286,10 +287,7 @@ def post_startup ():
   #core.register("switch", pox.dumb_l3_switch.dumb_l3_switch.dumb_l3_switch())
 
   if enable_openflow:
-    of_01.launch() # Always launch of_01
-
-  if debug:
-    debugger.launch()
+    pox.openflow.of_01.launch() # Usually, we launch of_01
 
 def _monkeypatch_console ():
   """
