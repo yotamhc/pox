@@ -90,7 +90,7 @@ class SwitchImplTest(unittest.TestCase):
           "should have received packet_in but got %s" % c.last)
     self.assertEqual(c.last.in_port,1)
     self.assertEqual(c.last.buffer_id,123)
-    self.assertEqual(c.last.data, self.packet)
+    self.assertEqual(c.last.data, self.packet.pack())
 
   def test_process_packet(self):
     c = self.conn
@@ -104,7 +104,7 @@ class SwitchImplTest(unittest.TestCase):
           "should have received packet_in but got %s" % c.last)
     self.assertTrue(c.last.buffer_id > 0)
 
-    # let's send a flow_mod
+    # let's send a flow_mod with a buffer id
     c.to_switch(ofp_flow_mod(xid=124, buffer_id=c.last.buffer_id, priority=1,
                              match=ofp_match(in_port=1, nw_src="1.2.3.4"),
                              actions = [ ofp_action_output(port=3) ]
