@@ -28,6 +28,7 @@ Note that this means that you often want to invoke something like:
 from pox.lib.revent import *
 from pox.core import core
 from pox.lib.addresses import *
+import traceback
 
 import pickle
 
@@ -118,16 +119,19 @@ class Entity (object):
   # identifiers.
   _next_id = 1
   _all_ids = set()
+  _tb = {}
 
   def __init__ (self, id=None):
     if id:
       if id in Entity._all_ids:
+        print("".join(traceback.format_list(self._tb[id])))
         raise Exception("ID %s already taken" % str(id))
     else:
       while Entity._next_id in Entity._all_ids:
         Entity._next_id += 1
       id = Entity._next_id
 
+    self._tb[id] = traceback.extract_stack()
     Entity._all_ids.add(id)
     self.id = id
 

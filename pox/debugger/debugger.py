@@ -293,6 +293,10 @@ class FuzzTester (EventMixin):
     # TODO: future feature: trace-driven packet generation
     for switch in self.live_switches():
       if self.random.random() < self.of_message_generation_rate:
+        # FIXME do something smarter here than just generate packet ins
+        event_type = PacketIn
+        event = self.event_generator.generate(event_type, switch)
+        """
         log.debug("triggering a random event")
         # trigger a random event handler.
         # TODO: trigger more than one in a given round?
@@ -308,6 +312,7 @@ class FuzzTester (EventMixin):
         # handlers are tuples: (priority, handler, once, eid)
         handler = handlers[0][1]
         handler(event)
+        """
 
   def invariant_check_prompt(self):
     answer = msg.raw_input('Check Invariants? [Ny]')

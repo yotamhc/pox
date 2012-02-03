@@ -72,7 +72,8 @@ class MessageChannel(object):
     # Single element queue
     self.buffer = ""
     self.on_data = None
-    self.on_data_running = True
+    self.on_data_running = False
+    self.pending_on_datas = 0
 
   def send(self, msg):
     self.buffer += msg
@@ -80,11 +81,13 @@ class MessageChannel(object):
     return len(msg)
 
   def _trigger_on_data(self):
+    self.pending_on_datas += 1
     if self.on_data_running:
       # avoid recursive calls to on_data
       return
 
-    while len(self.buffer) > 0:
+    while self.pending_on_datas > 0 and len(self.buffer) > 0:
+      self.pending_on_datas -= 1
       if self.on_data:
         self.on_data_running = True
         self.on_data(self, len(self.buffer))
