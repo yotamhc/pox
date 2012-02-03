@@ -55,6 +55,12 @@ def generateXID ():
   _nextXID = (_nextXID + 1) % (MAX_XID + 1)
   return r
 
+def xid_generator(start=1):
+  """ generate a xid sequence. Wraps at 2**31-1 """
+  n = start % (MAX_XID + 1)
+  while True:
+    yield n
+    n  = ( n + 1 )  % (MAX_XID + 1)
 
 def _format_body (body, prefix):
   if hasattr(body, 'show'):
@@ -1121,7 +1127,7 @@ class ofp_action_nw_addr (object):
   def set_src (cls, nw_addr = None):
     return cls(OFPAT_SET_NW_SRC, nw_addr)
 
-  def __init__ (self, nw_addr = None, type = None):
+  def __init__ (self, type = None, nw_addr = None):
     """
     'type' should be OFPAT_SET_NW_SRC or OFPAT_SET_NW_DST
     """
@@ -1221,7 +1227,7 @@ class ofp_action_tp_port (object):
   def set_src (cls, tp_port = None):
     return cls(OFPAT_SET_TP_SRC, tp_port)
 
-  def __init__ (self, tp_port = 0, type = None):
+  def __init__ (self, type=None, tp_port = 0):
     """
     'type' is OFPAT_SET_TP_SRC/DST
     """
