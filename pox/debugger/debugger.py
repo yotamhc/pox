@@ -14,8 +14,8 @@ from pox.lib.revent.revent import *
 
 from pox.topology.topology import *
 from pox.openflow.libopenflow_01 import ofp_action_output
-import pox.debugger.default_topology as default_topology
-from fuzzer_entities import *
+import pox.debugger.topology_generator as topology_generator
+from pox.debugger.debugger_entities import *
 from event_generator import EventGenerator
 from invariant_checker import InvariantChecker
 
@@ -151,13 +151,16 @@ class FuzzTester (EventMixin):
   def _ready_to_start(self):
     controllers = self.topology.getEntitiesOfType(Controller, True)
     if len(controllers) < self.num_controllers:
+      log.debug("_ready_to_start: waiting for %d controllers, have so far: %s" % (self.num_controllers, str(controllers)) )
       return False
 
-    handshake_complete_controllers = filter(lambda c: c.handshake_complete, controllers)
-    if len(handshake_complete_controllers) < self.num_controllers:
+    handshake_pending_controllers = filter(lambda c: not c.handshake_complete, controllers)
+    if len(handshake_pending_controllers) > 0:
+      log.debug("_ready_to_start: controllers with pending handshake: " + str(handshake_pending_controllers))
       return False
 
     if not self.core_up:
+      log.debug("_ready_to_start: Core not yet up")
       return False
 
     # TODO: need a mechanism for signaling  when the distributed controller handshake has completed
@@ -173,7 +176,7 @@ class FuzzTester (EventMixin):
     # TODO: allow the user to specify a topology
     # The next line should cause the client to register additional
     # handlers on switch entities
-    default_topology.populate(self.topology)
+    (self.panel, self.switches) = topology_generator.populate()
 
     self.loop()
 
@@ -203,7 +206,7 @@ class FuzzTester (EventMixin):
   # ============================================ #
   def all_switches(self):
     """ Return all switches currently registered """
-    return self.topology.getEntitiesOfType(MockOpenFlowSwitch)
+    return self.switches
 
   def crashed_switches(self):
     """ Return the switches which are currently down """
@@ -290,6 +293,10 @@ class FuzzTester (EventMixin):
     # TODO: future feature: trace-driven packet generation
     for switch in self.live_switches():
       if self.random.random() < self.of_message_generation_rate:
+        # FIXME do something smarter here than just generate packet ins
+        event_type = PacketIn
+        event = self.event_generator.generate(event_type, switch)
+        """
         log.debug("triggering a random event")
         # trigger a random event handler.
         # TODO: trigger more than one in a given round?
@@ -305,6 +312,7 @@ class FuzzTester (EventMixin):
         # handlers are tuples: (priority, handler, once, eid)
         handler = handlers[0][1]
         handler(event)
+        """
 
   def invariant_check_prompt(self):
     answer = msg.raw_input('Check Invariants? [Ny]')

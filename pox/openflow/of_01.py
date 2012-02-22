@@ -26,6 +26,9 @@ from pox.core import core
 import pox
 import pox.lib.util
 from pox.lib.revent.revent import EventMixin
+import datetime
+from pox.lib.socketcapture import CaptureSocket
+import pox.openflow.debug
 
 from pox.openflow import *
 
@@ -360,14 +363,86 @@ deferredSender = DeferredSender()
 
 class DummyOFHub (object):
   def raiseEventNoErrors (self, event, *args, **kw):
-    log.warning("%s raised on dummy OpenFlow hub")
+    log.warning("%s raised on dummy OpenFlow hub" % event)
   def raiseEvent (self, event, *args, **kw):
-    log.warning("%s raised on dummy OpenFlow hub")
+    log.warning("%s raised on dummy OpenFlow hub" % event)
   def _disconnect (self, dpid):
     log.warning("%s disconnected on dummy OpenFlow hub",
                 pox.lib.util.dpidToStr(dpid))
 
 _dummyOFHub = DummyOFHub()
+
+
+"""
+class FileCloser (object):
+  def __init__ (self):
+    from weakref import WeakSet
+    self.items = WeakSet()
+    core.addListeners(self)
+    import atexit
+    atexit.register(self._handle_DownEvent, None)
+
+  def _handle_DownEvent (self, event):
+    for item in self.items:
+      try:
+        item.close()
+      except Exception:
+        log.exception("Couldn't close a file while shutting down")
+    self.items.clear()
+
+_itemcloser = FileCloser()
+"""
+
+
+class OFCaptureSocket (CaptureSocket):
+  """
+  Captures OpenFlow data to a pcap file
+  """
+  def __init__ (self, *args, **kw):
+    super(OFCaptureSocket,self).__init__(*args, **kw)
+    self._rbuf = bytes()
+    self._sbuf = bytes()
+    self._enabled = True
+    #_itemcloser.items.add(self)
+
+  def _recv_out (self, buf):
+    if not self._enabled: return
+    self._rbuf += buf
+    l = len(self._rbuf)
+    while l > 4:
+      if ord(self._rbuf[0]) != of.OFP_VERSION:
+        log.error("Bad OpenFlow version while trying to capture trace")
+        self._enabled = False
+        break
+      packet_length = ord(self._rbuf[2]) << 8 | ord(self._rbuf[3])
+      if packet_length > l: break
+      try:
+        self._writer.write(False, self._rbuf[:packet_length])
+      except Exception:
+        log.exception("Exception while writing controller trace")
+        self._enabled = False
+      self._rbuf = self._rbuf[packet_length:]
+      l = len(self._rbuf)
+
+  def _send_out (self, buf, r):
+    if not self._enabled: return
+    self._sbuf += buf
+    l = len(self._sbuf)
+    while l > 4:
+      if ord(self._sbuf[0]) != of.OFP_VERSION:
+        log.error("Bad OpenFlow version while trying to capture trace")
+        self._enabled = False
+        break
+      packet_length = ord(self._sbuf[2]) << 8 | ord(self._sbuf[3])
+      if packet_length > l: break
+      try:
+        self._writer.write(True, self._sbuf[:packet_length])
+      except Exception:
+        log.exception("Exception while writing controller trace")
+        self._enabled = False
+      self._sbuf = self._sbuf[packet_length:]
+      l = len(self._sbuf)
+
 
 class Connection (EventMixin):
   """
@@ -468,9 +543,10 @@ class Connection (EventMixin):
       pass
     try:
       if hard:
+        self.sock.shutdown(socket.SHUT_RDWR)
         self.sock.close()
       else:
-        self.sock.shutdown(socket.SHUT_RDWR)
+        self.sock.close()
       pass
     except:
       pass
@@ -535,6 +611,7 @@ class Connection (EventMixin):
       # OpenFlow parsing occurs here:
       ofp_type = ord(self.buf[1])
       packet_length = ord(self.buf[2]) << 8 | ord(self.buf[3])
+      log.debug("Buffer length: %d, packet_length: %d, classes: %s" % (l, packet_length, classes[ofp_type] if packet_length <= l else "None"))
       if packet_length > l: break
       msg = classes[ofp_type]()
       msg.unpack(self.buf)
@@ -590,6 +667,21 @@ class Connection (EventMixin):
     return "[Con " + str(self.ID) + "/" + str(self.dpid) + "]"
 
 
+def wrap_socket (new_sock):
+  fname = datetime.datetime.now().strftime("%Y-%m-%d-%I%M%p")
+  fname += "_" + new_sock.getpeername()[0].replace(".", "_")
+  fname += "_" + `new_sock.getpeername()[1]` + ".pcap"
+  pcapfile = file(fname, "w")
+  try:
+    new_sock = OFCaptureSocket(new_sock, pcapfile,
+                               local_addrs=(None,None,6633))
+  except Exception:
+    import traceback
+    traceback.print_exc()
+    pass
+  return new_sock
+
+
 from pox.lib.recoco.recoco import *
 
 class OpenFlow_01_Task (Task):
@@ -615,7 +707,6 @@ class OpenFlow_01_Task (Task):
     listener.bind((self.address, self.port))
     listener.listen(16)
     sockets.append(listener)
-    wsocks = []
 
     log.debug("Listening for connections on %s:%s" %
               (self.address, self.port))
@@ -653,6 +744,8 @@ class OpenFlow_01_Task (Task):
           for con in rlist:
             if con is listener:
               new_sock = listener.accept()[0]
+              if pox.openflow.debug.pcap_traces:
+                new_sock = wrap_socket(new_sock)
               new_sock.setblocking(0)
               # Note that instantiating a Connection object fires a
               # ConnectionUp event (after negotation has completed)

@@ -24,6 +24,7 @@ from pox.openflow.switch_impl import *
 import pox.topology.topology as topology
 from pox.controllers.distributed_controller import DistributedController
 from pox.core import core
+from mock_socket import MockSocket
 
 import struct
 from socket import *
@@ -80,13 +81,17 @@ def connect_to_nom(switches):
     (switch_socket, nom_socket) = MockSocket.pair()
 
     switch_connection = switch.set_socket(switch_socket)
-    switch_socket.set_on_ready_to_recv(lambda (switch, length): switch_connection.read() )
+    switch_socket.set_on_ready_to_recv(lambda switch, length: switch_connection.read() )
 
     nom_connection = Connection(nom_socket)
-    nom_socket.set_on_ready_to_recv(lambda (switch, length): nom_connection.read() )
+    # HACK alert. This should be replaced with something more sensible. May require 
+    # heavy refactoring of the spaghetti mess that is of_01 / Connection, which
+    # is why I am not doing it right now.
+    nom_connection.dpid = switch.dpid
+    nom_socket.set_on_ready_to_recv(lambda switch, length: nom_connection.read() )
 
     # this will cause the OpenFlowSwitch to be created, controller notified, yalla yalla
-    core.openflow_topology._handle_openflow_ConnectionUp(nom_connection)
+    core.openflow_topology._handle_openflow_ConnectionUp(ConnectionUp(nom_connection, None))
   return switches
 
 def populate(num_switches=3):

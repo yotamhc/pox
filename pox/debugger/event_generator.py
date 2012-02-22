@@ -19,7 +19,7 @@ class EventGenerator (object):
 
   def generate(self, eventType, switch):
     if eventType not in self._event_generators:
-      raise "Unknown event type %s" % str(eventType)
+      raise AttributeError("Unknown event type %s" % str(eventType))
 
     return self._event_generators[eventType](switch)
 
@@ -27,11 +27,12 @@ class EventGenerator (object):
     # randomly choose an in_port.
     if len(switch.ports) == 0:
       raise RuntimeError("No Ports Registered on switch! %s" % str(switch)) # TODO:
+    # Fixme just use client ports for packet ins -- not packets from within the network
     in_port = self.random.choice(switch.ports.values())
     e = ethernet()
     # TODO: need a better way to create random MAC addresses
     e.src = EthAddr(struct.pack("Q",self.random.randint(1,0xFF))[:6])
-    e.dst = in_port.hwAddr
+    e.dst = in_port.hw_addr
     e.type = ethernet.IP_TYPE
     ipp = ipv4()
     ipp.protocol = ipv4.ICMP_PROTOCOL
@@ -46,12 +47,4 @@ class EventGenerator (object):
     buffer_id = self.random.randint(0,0xFFFFFFFF)
     reason = None
 
-    pkt = ofp_packet_in(data = e.pack(),
-                        in_port = in_port.number,
-                        buffer_id = buffer_id,
-                        reason = reason)
-
-    # TODO: rather than returning an Event, instead call
-    # switch.send(pkt), so that this is an end-to-end test (more valuable,
-    # even if the switch is mocked out.)
-    return PacketIn(switch, pkt)
+    switch.process_packet(e, in_port=in_port.port_no)
