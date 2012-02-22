@@ -3,10 +3,10 @@ Created on Aug 13, 2011
 
 @author: peymankazemian
 '''
-from headerspace.tf import *
-from headerspace.hs import *
-from NSDI_examples.emulated_tf import *
-from config_parser.helper import dotted_ip_to_int
+from pox.lib.headerspace.headerspace.tf import *
+from pox.lib.headerspace.headerspace.hs import *
+from pox.lib.headerspace.NSDI_examples.emulated_tf import *
+from pox.lib.headerspace.config_parser.helper import dotted_ip_to_int
 
 rtr_names = ["bbra_rtr",
              "bbrb_rtr",

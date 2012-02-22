@@ -3,7 +3,7 @@ Created on Aug 14, 2011
 
 @author: peymankazemian
 '''
-from headerspace.hs import byte_array_list_contained_in
+from pox.lib.headerspace.headerspace.hs import byte_array_list_contained_in
 
 class emulated_tf(object):
     

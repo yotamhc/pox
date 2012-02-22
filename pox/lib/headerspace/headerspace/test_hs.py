@@ -4,8 +4,8 @@ Created on Jun 20, 2011
 @author: peymankazemian
 '''
 
-from headerspace.hs import *
-from headerspace.wildcard_dictionary import *
+from pox.lib.headerspace.headerspace.hs import *
+from pox.lib.headerspace.headerspace.wildcard_dictionary import *
 
 def test_hs_simple():
     hs = headerspace(2)

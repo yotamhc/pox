@@ -3,10 +3,10 @@ Created on Aug 18, 2011
 
 @author: peymankazemian
 '''
-from headerspace.hs import *
-from headerspace.tf import *
-from config_parser.cisco_router_parser import *
-from config_parser.helper import *
+from pox.lib.headerspace.headerspace.hs import *
+from pox.lib.headerspace.headerspace.tf import *
+from pox.lib.headerspace.config_parser.cisco_router_parser import *
+from pox.lib.headerspace.config_parser.helper import *
 
 cs = ciscoRouter(1)
 t = TF(ciscoRouter.HS_FORMAT()["length"]*2)

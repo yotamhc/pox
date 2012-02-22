@@ -4,9 +4,9 @@ Created on Jan 24, 2011
 @author: peyman kazemian
 '''
 
-from headerspace.hs import *
+from pox.lib.headerspace.headerspace.hs import *
 from array import array
-from headerspace.wildcard_dictionary import wildcard_dictionary
+from pox.lib.headerspace.headerspace.wildcard_dictionary import wildcard_dictionary
 
 class TF(object):
     '''

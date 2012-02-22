@@ -3,10 +3,10 @@ Created on Aug 14, 2011
 
 @author: peymankazemian
 '''
-from NSDI_examples.load_stanford_backbone import *
-from config_parser.cisco_router_parser import ciscoRouter
-from headerspace.hs import *
-from headerspace.applications import *
+from pox.lib.headerspace.NSDI_examples.load_stanford_backbone import *
+from pox.lib.headerspace.config_parser.cisco_router_parser import ciscoRouter
+from pox.lib.headerspace.headerspace.hs import *
+from pox.lib.headerspace.headerspace.applications import *
 from time import time, clock
 
 ntf = load_stanford_backbone_ntf()

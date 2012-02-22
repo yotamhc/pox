@@ -1,5 +1,5 @@
-from config_parser.cisco_router_parser import ciscoRouter
-from headerspace.tf import *
+from cisco_router_parser import ciscoRouter
+from pox.lib.headerspace.headerspace.tf import *
 
 cs = ciscoRouter(1)
 tf = TF(cs.HS_FORMAT()["length"]*2)

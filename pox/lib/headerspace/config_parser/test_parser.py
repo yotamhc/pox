@@ -3,9 +3,9 @@ Created on Jul 5, 2011
 
 @author: peymankazemian
 '''
-from headerspace.tf import *
-from headerspace.hs import *
-from config_parser.cisco_router_parser import ciscoRouter,dotted_ip_to_int
+from pox.lib.headerspace.headerspace.tf import *
+from pox.lib.headerspace.headerspace.hs import *
+from pox.lib.headerspace.config_parser.cisco_router_parser import ciscoRouter,dotted_ip_to_int
 from time import time, clock
 
 f = TF(1)

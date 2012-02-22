@@ -3,11 +3,11 @@ Created on Sep 26, 2011
 
 @author: peymankazemian
 '''
-from headerspace.hs import *
-from headerspace.tf import *
-from headerspace.slice import *
-from config_parser.cisco_router_parser import ciscoRouter
-from config_parser.helper import *
+from pox.lib.headerspace.headerspace.hs import *
+from pox.lib.headerspace.headerspace.tf import *
+from pox.lib.headerspace.headerspace.slice import *
+from pox.lib.headerspace.config_parser.cisco_router_parser import ciscoRouter
+from pox.lib.headerspace.config_parser.helper import *
 from time import time
 import math
 import random

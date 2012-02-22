@@ -3,8 +3,8 @@ Created on Aug 10, 2011
 
 @author: peymankazemian
 '''
-from config_parser.cisco_router_parser import *
-from headerspace.tf import *
+from pox.lib.headerspace.config_parser.cisco_router_parser import *
+from pox.lib.headerspace.headerspace.tf import *
 from time import time, clock
 
 st = time()

@@ -4,7 +4,7 @@ Created on Jan 26, 2011
 @author: peymankazemian
 '''
 
-from headerspace.tf import TF
+from pox.lib.headerspace.headerspace.tf import TF
 
 class Slice(object):
     '''

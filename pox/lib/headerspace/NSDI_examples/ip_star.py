@@ -1,7 +1,7 @@
-from headerspace.hs import *
-from headerspace.tf import TF
-from headerspace.applications import *
-from config_parser.helper import *
+from pox.lib.headerspace.headerspace.hs import *
+from pox.lib.headerspace.headerspace.tf import TF
+from pox.lib.headerspace.headerspace.applications import *
+from pox.lib.headerspace.config_parser.helper import *
 import random
 from time import time, clock
 
