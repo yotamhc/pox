@@ -68,6 +68,11 @@ def find_reachability(NTF, TTF, in_port, out_ports, input_pkt):
         propagation = tmp_propagate
                 
     return paths
+  
+def get_all_x(NTF):
+  all_x = byte_array_get_all_x(NTF.length)
+  test_pkt = headerspace(NTF.length)
+  test_pkt.add_hs(all_x)
                     
 def detect_loop(NTF, TTF, ports, reverse_map, test_packet = None):
     loops = []
@@ -78,9 +83,7 @@ def detect_loop(NTF, TTF, ports, reverse_map, test_packet = None):
         # put all-x test packet in propagation graph
         test_pkt = test_packet
         if test_pkt == None:
-            all_x = byte_array_get_all_x(NTF.length)
-            test_pkt = headerspace(NTF.length)
-            test_pkt.add_hs(all_x)
+          test_pkt = get_all_x(NTF)
         
         p_node = {}
         p_node["hdr"] = test_pkt
@@ -94,7 +97,7 @@ def detect_loop(NTF, TTF, ports, reverse_map, test_packet = None):
             print "Propagation has length: %d"%len(propagation)
             tmp_propag = []
             for p_node in propagation:
-              #  TODOC: hp is "header port"
+                # hp is "header port"
                 next_hp = NTF.T(p_node["hdr"],p_node["port"])
                 for (next_h,next_ps) in next_hp:
                     for next_p in next_ps:
@@ -123,7 +126,75 @@ def detect_loop(NTF, TTF, ports, reverse_map, test_packet = None):
                                     tmp_propag.append(new_p_node)
             propagation = tmp_propag
     return loops
-
+  
+def compute_omega(NTF, TTF, edge_ports, reverse_map, test_packet = None):
+  # Function from: 
+  #   (header space, edge_port) -> [(header_space, final_location),(header_space, final_location)...]
+  omega = {}
+  
+  for start_port in edge_ports:
+    print "port %d is being checked" % start_port
+    propagation = []
+        
+    # put all-x test packet in propagation graph
+    test_pkt = test_packet
+    if test_pkt == None:
+      test_pkt = get_all_x(NTF)
+        
+    p_node = {}
+    p_node["hdr"] = test_pkt
+    p_node["port"] = start_port
+    p_node["visits"] = []
+    p_node["hs_history"] = []
+        
+    propagation.append(p_node)
+    while len(propagation) > 0: # TODO: is this stopping condition correct?!!!
+      #get the next node in propagation graph and apply it to NTF and TTF
+      print "Propagation has length: %d" % len(propagation)
+      tmp_propag = []
+      for p_node in propagation:
+        # hp is "header port"
+        next_hp = NTF.T(p_node["hdr"],p_node["port"])
+        for (next_h,next_ps) in next_hp:
+          for next_p in next_ps:
+            linked = TTF.T(next_h,next_p)
+            for (linked_h,linked_ports) in linked:
+              for linked_p in linked_ports:
+                new_p_node = {}
+                new_p_node["hdr"] = linked_h
+                new_p_node["port"] = linked_p
+                new_p_node["visits"] = list(p_node["visits"])
+                new_p_node["visits"].append(p_node["port"])
+                #new_p_node["visits"].append(next_p)
+                new_p_node["hs_history"] = list(p_node["hs_history"])
+                new_p_node["hs_history"].append(p_node["hdr"])
+                #print new_p_node
+                  
+                # TODO: perhaps this needs to come before computing TTF?
+                if next_p in edge_ports:
+                  # We've reached our final destination!
+              
+                  # TODO: the other possibility for final destination is a dropped packet...
+                  #       I believe that is represented as a null header space... Do I need to
+                  #       worry about that?
+               
+                  # use the inverse T trick to get original headerspace which led us here
+                  original_headers = find_loop_original_header(NTF,TTF,new_p_node)
+                  for original_header in original_headers:
+                    key = (original_header, start_port)
+                    if not key in omega:
+                      # TODO: python default value for hash?
+                      omega[key] = []
+                    omega[key].append((next_h, next_p))
+                    
+                if linked_p in new_p_node["visits"]:
+                  print "WARNING: detected a loop - branch aborted: \nHeaderSpace: %s\n Visited Ports: %s\nLast Port %d "%(\
+                         new_p_node["hdr"],new_p_node["visits"],new_p_node["port"])
+                else:
+                  tmp_propag.append(new_p_node) 
+                propagation = tmp_propag
+    return omega
+  
 def print_reachability(paths, reverse_map):
     for p_node in paths:
         str = ""
