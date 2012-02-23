@@ -64,10 +64,9 @@ class FuzzTester (EventMixin):
     # simulator, emulator subclasses. Use vector clocks to take
     # consistent snapshots of emulated network
 
-  _eventMixin_events = Topology._eventMixin_events
+  _core_name = "debugger"
 
-  # We're masquarading as core.topology
-  _core_name = "topology"
+  _wantComponents = ["openflow_topology"]
 
   """
   This is part of a testing framework for controller applications. It
@@ -80,8 +79,9 @@ class FuzzTester (EventMixin):
   def __init__(self, num_controllers):
     self.num_controllers = num_controllers
 
-    self.listenTo(core)
     self.core_up = False
+    if not core.listenToDependencies(self, self._wantComponents):
+      self.listenTo(core)
 
     self.topology = Topology()
 
@@ -132,6 +132,13 @@ class FuzzTester (EventMixin):
     #   EVERYTHING  # The user controls everything, including message ordering
     # ]
 
+  def _handle_ComponentRegistered (self, event):
+    """
+    A component was registered with pox.core. If we were dependent on it, 
+    check again if all of our dependencies are now satisfied so we can boot.
+    """
+    if core.listenToDependencies(self, self._wantComponents):
+      return EventRemove
 
   def _handle_GoingUpEvent(self, going_up_event):
     log.debug("going up event!")
@@ -341,12 +348,6 @@ class FuzzTester (EventMixin):
         msg.success("Invariant holds!")
       else:
         msg.fail("Invariant violated!")
-
-  def __getattr__( self, name ):
-    """
-    Delegate unknown attributes to fuzzer (we just interpose)
-    """
-    return getattr( self.topology, name )
 
   # TODO: do we need to define more event types? e.g., packet delivered,
   # controller crashed, etc. An alternative might be to just generate
