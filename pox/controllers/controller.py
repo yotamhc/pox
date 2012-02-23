@@ -27,25 +27,24 @@ class Controller (EventMixin, topology.Controller):
   Generic Controller Application Superclass. Loads up topology and
   registers subclasse's handlers with topology et al.
   """
-  
+
   _core_name = name
-  
+
   # The set of components we depend on. These must be loaded before we can begin.
   _wantComponents = set(['topology'])
-  
+
   def __init__(self):
     EventMixin.__init__(self)
     topology.Controller.__init__(self, "controller")
-    
+
     if not core.listenToDependencies(self, self._wantComponents):
       # If dependencies aren't fully loaded, register event handlers for ComponentRegistered
       self.listenTo(core)
     else:
       core.topology.addEntity(self, handshake_completed = True)
-  
+
   def _handle_ComponentRegistered (self, event):
     """ Checks whether the newly registered component is one of our dependencies """
     if core.listenToDependencies(self, self._wantComponents):
       core.topology.addEntity(self)
       return EventRemove
-  

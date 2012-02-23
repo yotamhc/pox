@@ -134,7 +134,7 @@ class FuzzTester (EventMixin):
 
   def _handle_ComponentRegistered (self, event):
     """
-    A component was registered with pox.core. If we were dependent on it, 
+    A component was registered with pox.core. If we were dependent on it,
     check again if all of our dependencies are now satisfied so we can boot.
     """
     if core.listenToDependencies(self, self._wantComponents):

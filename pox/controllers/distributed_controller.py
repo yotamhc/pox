@@ -29,7 +29,7 @@ UpdateACK = namedtuple('UpdateACK', 'xid controller_name')
 class DistributedController(EventMixin, topology.Controller):
   """
   Keeps a copy of the Nom in its cache. Arbitrary controller applications
-  can be implemented on top of NomClient through inheritance. Mutating calls to 
+  can be implemented on top of NomClient through inheritance. Mutating calls to
   self.nom transparently write-through to the NomServer
 
   Visually,  NomClient's connect to the NomServer through
@@ -49,7 +49,7 @@ class DistributedController(EventMixin, topology.Controller):
     """
     Note that server may be a direct reference to the NomServer (for simulation), or a Pyro4 proxy
     (for emulation)
-    
+
     pre: name is unique across the network
     """
     EventMixin.__init__(self)
@@ -60,14 +60,14 @@ class DistributedController(EventMixin, topology.Controller):
     self.topology = topology.Topology("topo:%s" % self.name)
     # Register subclass' event handlers
     self.listenTo(self.topology, "topology")
-        
+
     self._server_connection = None
     self._queued_commits = []
-    
+
     # For simulation. can't connect to NomServer until the Messenger is listening to new connections
     # TODO: for emulation, this should be removed / refactored -- just assume that the NomServer machine is up
     core.messenger.addListener(messenger.MessengerListening, self._register_with_server)
-    
+
   def _register_with_server(self, event):
     self.log.debug("Attempting to register with NomServer")
     sock = socket.socket()
@@ -82,19 +82,19 @@ class DistributedController(EventMixin, topology.Controller):
     self._server_connection.send({"get":None})
     self.log.debug("get request sent. Starting listen task")
     self._server_connection.start()
-    
+
   def _handle_MessageReceived (self, event, msg):
     # TODO: event.claim() should be factored out -- I want to claim the connection
     #       before the first MessageReceived event occurs.
-    event.claim()  
+    event.claim()
     if event.con.isReadable():
       r = event.con.read()
       if type(r) is not dict:
         self.log.warn("message was not a dict!")
         return
-      
+
       self.log.debug("Message received, type: %s-" % r.keys())
-      
+
       if "nom_update" in r:
         self.nom_update(r["nom_update"])
     else:
@@ -106,7 +106,7 @@ class DistributedController(EventMixin, topology.Controller):
     function: F(view) => configuration
 
     This method is the entry point for the POX platform to update the
-    view. 
+    view.
 
     The POX platform may invoke it in two situations:
       i.  NomServer will invalidate this client's cache in the
@@ -117,13 +117,13 @@ class DistributedController(EventMixin, topology.Controller):
     """
     xid, id2entity = update
     self.log.debug("nom_update %d" % xid)
-    self.topology.deserializeAndMerge(id2entity) 
-            
+    self.topology.deserializeAndMerge(id2entity)
+
     update_ack = UpdateACK(xid, self.name)
     self._server_connection.send({"nom_update_ack":update_ack})
     self.log.debug("Sent nom_update_ack %d, %s" % update_ack)
-     
-    # TODO: react to the change in the topology, by firing queued events to 
+
+    # TODO: react to the change in the topology, by firing queued events to
     # subclass' ?
     return True
 
@@ -134,6 +134,5 @@ class DistributedController(EventMixin, topology.Controller):
     else:
       self.log.debug("Queuing nom commit")
       self._queued_commits.append(copy.deepcopy(self.topology))
-    
+
     # TODO: need to commit nom changes whenever the learning switch updates its state...
-  

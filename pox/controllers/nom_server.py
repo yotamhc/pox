@@ -39,31 +39,31 @@ class NomServer (EventMixin):
   |                        |   <-------------------     |                        |
   ==========================                            ==========================
   """
-  
+
   _core_name = name
-  
+
   # The set of components we depend on. These must be loaded before we can begin.i
   _wantComponents = set(['topology'])
-  
+
   def __init__(self):
     # Pre: core.messenger is registered
     # Wait for connections
     core.messenger.addListener(MessageReceived, self._handle_global_MessageReceived, weak=True)
-    
+
     # client name -> TCPMessageConnection
     self.registered = {}
-    
+
     # Unique ids for Nom Updates (id's needed for ACKs)
     self.next_nom_update_id = 0
-    
+
     # TODO: the following code is highly redundant with controller.rb
     self.topology = None
     if not core.listenToDependencies(self, self._wantComponents):
       # If dependencies aren't loaded, register event handlers for ComponentRegistered
       self.listenTo(core)
     else:
-      self._finish_initialization() 
-  
+      self._finish_initialization()
+
   def _handle_global_MessageReceived (self, event, msg):
     try:
       if 'nom_server_handshake' in msg:
@@ -78,36 +78,36 @@ class NomServer (EventMixin):
         log.debug("- ignoring")
     except:
       pass
-    
+
   def _handle_MessageReceived (self, event, msg):
     if event.con.isReadable():
       r = event.con.read()
       if type(r) is not dict:
         log.warn("message was not a dict!")
         return
-      
+
       log.debug("MessageRecieved -%s" % str(r.keys()))
-      
+
       if r.get("bye",False):
         log.debug("- goodbye!")
         event.con.close()
       if "get" in r:
         self.get(event.con)
       if "put" in r:
-        self.put(r["put"]) 
+        self.put(r["put"])
       if "nom_update_ack" in r:
         self.update_ack(r['nom_update_ack'])
     else:
       log.debug("- conversation finished")
-  
+
   def _handle_ComponentRegistered (self, event):
     """ Checks whether the newly registered component is one of our dependencies """
     if core.listenToDependencies(self, self._wantComponents):
-        self._finish_initialization() 
+      self._finish_initialization()
 
   def _finish_initialization(self):
     self.topology = core.components['topology']
-      
+
   def register_client(self, client_name, connection):
     log.info("register %s" % client_name)
     self.registered[client_name] = connection
@@ -116,7 +116,7 @@ class NomServer (EventMixin):
 
   def unregister_client(self, client):
     pass
-  
+
   def _next_update_xid(self):
     xid = self.next_nom_update_id
     self.next_nom_update_id += 1
@@ -129,7 +129,7 @@ class NomServer (EventMixin):
     update = NomUpdate(xid, serialized)
     conn.send({"nom_update":update})
     log.debug("get answer %d sent" % xid)
-   
+
   def put(self, id2entity):
     # TODO: does nom_server need to send back an ACK?
     log.info("put")
@@ -142,19 +142,17 @@ class NomServer (EventMixin):
       connection = self.registered[client_name]
       # Push out the new topology
       self.get(connection)
-     
+
   def update_ack(self, update_ack):
     xid, controller_name = update_ack
     controller = self.topology.getEntityByID(controller_name)
     controller.handshake_completed()
     self.topology.raiseEvent(topology.Update())
     # TODO: do something else with the ACK
-   
+
 def launch():
   import pox.messenger.messenger as messenger
   # TODO: don't assume localhost:7790 for emulation
   messenger.launch()
   from pox.core import core
   core.registerNew(NomServer)
-  
-  

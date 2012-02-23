@@ -84,7 +84,7 @@ def connect_to_nom(switches):
     switch_socket.set_on_ready_to_recv(lambda switch, length: switch_connection.read() )
 
     nom_connection = Connection(nom_socket)
-    # HACK alert. This should be replaced with something more sensible. May require 
+    # HACK alert. This should be replaced with something more sensible. May require
     # heavy refactoring of the spaghetti mess that is of_01 / Connection, which
     # is why I am not doing it right now.
     nom_connection.dpid = switch.dpid
@@ -140,5 +140,3 @@ class FullyMeshedPanel(PatchPanel):
 
     other_switch = self.switches[other_switch_no]
     return (other_switch, other_switch.ports[other_port_no+1])
-
-

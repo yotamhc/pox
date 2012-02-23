@@ -26,4 +26,4 @@ h = headerspace(ciscoRouter.HS_FORMAT()["length"]*2)
 h.add_hs(all_x)
 output = t.T(h,2)
 for (h,p) in output:
-    print "(%s,%s)"%(h,p)
+  print "(%s,%s)"%(h,p)

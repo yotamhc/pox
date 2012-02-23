@@ -39,13 +39,13 @@ class MockSocket:
     return self.sending.is_full()
 
   def shutdown(self, sig=None):
-    """ shutdown a socket. Currently a no-op on this MockSocket object. 
+    """ shutdown a socket. Currently a no-op on this MockSocket object.
         TODO: implement more realistic closing semantics
     """
     pass
 
   def close(self):
-    """ close a socket. Currently a no-op on this MockSocket object. 
+    """ close a socket. Currently a no-op on this MockSocket object.
         TODO: implement more realistic closing semantics
     """
     pass
