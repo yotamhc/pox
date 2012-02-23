@@ -28,7 +28,7 @@ import logging
 _default_log_handler = logging.StreamHandler()
 _default_log_handler.setFormatter(logging.Formatter(logging.BASIC_FORMAT))
 logging.getLogger().addHandler(_default_log_handler)
-logging.getLogger().setLevel(logging.DEBUG)
+logging.getLogger().setLevel(logging.INFO)
 
 import inspect
 import time
