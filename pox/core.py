@@ -32,7 +32,7 @@ logging.getLogger().setLevel(logging.INFO)
 
 import inspect
 import time
-mport os
+import os
 
 _path = inspect.stack()[0][1]
 _ext_path = _path[0:_path.rindex(os.sep)]
