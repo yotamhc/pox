@@ -16,7 +16,7 @@
 # along with POX.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-This is a prototype control application written on top of the (substrate) NOM. 
+This is a prototype control application written on top of the (substrate) NOM.
 
 It converts NOM switch entities into LearningSwitches.
 """

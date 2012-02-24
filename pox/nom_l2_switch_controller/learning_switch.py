@@ -16,7 +16,7 @@ import pickle
 # To ensure statelesness (order-independence), the application must never instantiate its own
 # objects. Instead, it must "fold in" any needed state into the NOM. The platform itself is in
 # charge of managing the NOM.
-# 
+#
 # To "fold in" state, the application must declare a user-defined NOM entity. The entities
 # encapsulate:
 #   i.    State (e.g., self.mac2port = {})
@@ -57,16 +57,16 @@ class LearningSwitch (EventMixin, Entity):
   def __init__ (self, name, switch=None, macToPort={}):
     """
     Initialize the NOM Wrapper for Switch Entities
-    
+
     switch - the NOM switch entity to wrap
     """
     # TODO: don't force user to inherit from Entity. We need this for Entity.ID.
     # The long-term solution would be to create a second NOM layer for user-defined
     # entities.
-    Entity.__init__(self) 
+    Entity.__init__(self)
     self.name = name
     self.switch = switch
-    self.log = core.getLogger(name) 
+    self.log = core.getLogger(name)
 
     # We define our own state
     self.macToPort = macToPort
@@ -78,7 +78,7 @@ class LearningSwitch (EventMixin, Entity):
   def _handle_PacketIn (self, packet_in_event):
     """ Event handler for PacketIn events: run the learning switch algorithm """
     self.log.debug("PacketIn_handler! packet_in_event: %s" % (str(packet_in_event)))
-    
+
     def flood ():
       """ Floods the packet """
       # TODO: there should really be a static method in pox.openflow that constructs this
@@ -111,15 +111,14 @@ class LearningSwitch (EventMixin, Entity):
         msg.actions.append(of.ofp_action_output(port = port))
         msg.buffer_id = packet_in_event.ofp.buffer_id
         self.switch.send(msg)
-        
+
   def serialize(self):
     # TODO: this is a hack... need a better way of differntiating IDs (remote case) from raw objects (local case)
     if isinstance(self.switch, Entity):
       switch_id = self.switch.id
     else:
       switch_id = self.switch
-      
+
     serializable = LearningSwitch(self.name, switch_id)
     serializable.log = None
     return pickle.dumps(serializable, protocol = 0)
-    

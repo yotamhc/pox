@@ -16,7 +16,7 @@
 # along with POX.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-This is a prototype control application written on top of the (substrate) NOM. 
+This is a prototype control application written on top of the (substrate) NOM.
 
 It converts NOM switch entities into LearningSwitches.
 """
@@ -34,17 +34,15 @@ class nom_l2_switch_controller (Controller):
   """ Controller that treats the network as a set of learning switches """
 
   _core_name = name
-  
+
   def __init__ (self):
     """ Initializes the l2 switch controller component """
     Controller.__init__(self)
     log.debug("nom_l2_switch_controller booting...")
-   
+
   def _handle_topology_SwitchJoin(self, switchjoin_event):
     """ Convert switches into Learning Switches """
     log.debug("Switch Join! %s " % switchjoin_event)
     switch = switchjoin_event.switch
     name = "learning_" + switch.name
     core.topology.addEntity(LearningSwitch(name, switch))
-    
-    
