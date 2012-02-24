@@ -69,6 +69,8 @@ class NomServer (EventMixin):
       if 'nom_server_handshake' in msg:
         # It's for me! Store the connection object. Their name is the value
         event.con.read() # Consume the message
+        # Claiming the message channel causes (local) MessageReceived to be triggered
+        # from here on after
         event.claim()
         event.con.addListener(MessageReceived, self._handle_MessageReceived, weak=True)
         controller_name = msg['nom_server_handshake']
@@ -80,6 +82,7 @@ class NomServer (EventMixin):
       pass
 
   def _handle_MessageReceived (self, event, msg):
+    # Message handler for an individiual connection
     if event.con.isReadable():
       r = event.con.read()
       if type(r) is not dict:

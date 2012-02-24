@@ -53,10 +53,14 @@ class DistributedController(EventMixin, topology.Controller):
     pre: name is unique across the network
     """
     EventMixin.__init__(self)
+    # We are a "controller" entity in pox.topology.
+    # (Actually injecting ourself into pox.topology is handled
+    # by nom_server)
     topology.Controller.__init__(self, name)
     self.name = name
     self.log = core.getLogger(name)
-    # To be populated later
+    # Construct an empty topology
+    # The "master" copy topology will soon be merged into this guy
     self.topology = topology.Topology("topo:%s" % self.name)
     # Register subclass' event handlers
     self.listenTo(self.topology, "topology")
@@ -65,13 +69,15 @@ class DistributedController(EventMixin, topology.Controller):
     self._queued_commits = []
 
     # For simulation. can't connect to NomServer until the Messenger is listening to new connections
-    # TODO: for emulation, this should be removed / refactored -- just assume that the NomServer machine is up
+    # TODO: for emulation, this should be removed / refactored --
+    # just assume that the NomServer machine is up
     core.messenger.addListener(messenger.MessengerListening, self._register_with_server)
 
   def _register_with_server(self, event):
     self.log.debug("Attempting to register with NomServer")
     sock = socket.socket()
     # TODO: don't assume localhost -> should point to machine NomServer is running on
+    # TODO: magic numbers should be re-factored as constants
     sock.connect(("localhost",7790))
     self._server_connection = messenger.TCPMessengerConnection(socket = sock)
     self._server_connection.addListener(messenger.MessageReceived, self._handle_MessageReceived)
