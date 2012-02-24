@@ -35,13 +35,13 @@ class Controller (EventMixin, topology.Controller):
 
   def __init__(self):
     EventMixin.__init__(self)
-    topology.Controller.__init__(self, "controller")
+    topology.Controller.__init__(self, "controller", handshake_complete=True)
 
     if not core.listenToDependencies(self, self._wantComponents):
       # If dependencies aren't fully loaded, register event handlers for ComponentRegistered
       self.listenTo(core)
     else:
-      core.topology.addEntity(self, handshake_completed = True)
+      core.topology.addEntity(self)
 
   def _handle_ComponentRegistered (self, event):
     """ Checks whether the newly registered component is one of our dependencies """
