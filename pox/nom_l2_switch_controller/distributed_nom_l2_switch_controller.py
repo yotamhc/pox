@@ -31,9 +31,10 @@ class nom_l2_switch_controller (DistributedController):
 
   def __init__ (self, name=""):
     """ Initializes the l2 switch controller component """
+    # superconstructor will retrieve topology from server, and register handlers
     DistributedController.__init__(self, name)
     self.log.debug("nom_l2_switch_controller booting...")
-   
+
   def _handle_topology_SwitchJoin(self, switchjoin_event):
     """ Convert switches into Learning Switches """
     self.log.debug("Switch Join! %s " % switchjoin_event)
@@ -41,4 +42,3 @@ class nom_l2_switch_controller (DistributedController):
     name = "learning_" + switch.name
     self.topology.addEntity(LearningSwitch(name, switch))
     self.commit_nom_change()
-    
