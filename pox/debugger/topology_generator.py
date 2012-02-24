@@ -83,15 +83,11 @@ def connect_to_nom(switches):
     switch_connection = switch.set_socket(switch_socket)
     switch_socket.set_on_ready_to_recv(lambda switch, length: switch_connection.read() )
 
+    # The Connection will start the OpenFlow handshake process, as specified in
+    # several spaghetti handlers in of_10.
+    # Eventually, this will result in a connection up event
     nom_connection = Connection(nom_socket)
-    # HACK alert. This should be replaced with something more sensible. May require
-    # heavy refactoring of the spaghetti mess that is of_01 / Connection, which
-    # is why I am not doing it right now.
-    nom_connection.dpid = switch.dpid
     nom_socket.set_on_ready_to_recv(lambda switch, length: nom_connection.read() )
-
-    # this will cause the OpenFlowSwitch to be created, controller notified, yalla yalla
-    core.openflow_topology._handle_openflow_ConnectionUp(ConnectionUp(nom_connection, None))
   return switches
 
 def populate(num_switches=3):
