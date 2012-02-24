@@ -12,7 +12,6 @@ from pox.core import core
 import pox.openflow.libopenflow_01 as of
 from pox.lib.revent.revent import *
 
-from pox.topology.topology import *
 from pox.openflow.libopenflow_01 import ofp_action_output
 import pox.debugger.topology_generator as topology_generator
 from pox.debugger.debugger_entities import *
@@ -66,7 +65,7 @@ class FuzzTester (EventMixin):
 
   _core_name = "debugger"
 
-  _wantComponents = ["openflow_topology"]
+  _wantComponents = ["topology", "openflow_topology"]
 
   """
   This is part of a testing framework for controller applications. It
@@ -80,10 +79,13 @@ class FuzzTester (EventMixin):
     self.num_controllers = num_controllers
 
     self.core_up = False
+    self.listenTo(core)
     if not core.listenToDependencies(self, self._wantComponents):
-      self.listenTo(core)
-
-    self.topology = Topology()
+      self.topology = None
+      log.debug("still waiting for my required components: %s"% repr(self._wantComponents))
+    else:
+      self.topology = core.topology
+      log.debug("ready on initialization")
 
     self.running = False
 
@@ -138,6 +140,8 @@ class FuzzTester (EventMixin):
     check again if all of our dependencies are now satisfied so we can boot.
     """
     if core.listenToDependencies(self, self._wantComponents):
+      self.topology = core.topology
+      log.info("initialization completed")
       return EventRemove
 
   def _handle_GoingUpEvent(self, going_up_event):
