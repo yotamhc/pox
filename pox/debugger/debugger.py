@@ -59,10 +59,14 @@ class msg():
     print msg.BEGIN + msg.B_RED + msg.BEGIN + msg.WHITE + message + msg.END
 
 class FuzzTester (EventMixin):
-    # TODO: future feature: split this into Manager superclass and
-    # simulator, emulator subclasses. Use vector clocks to take
-    # consistent snapshots of emulated network
-
+  # TODO: future feature: split this into Manager superclass and
+  # simulator, emulator subclasses. Use vector clocks to take
+  # consistent snapshots of emulated network
+  
+  # TODO: do we need to define more event types? e.g., packet delivered,
+  # controller crashed, etc. An alternative might be to just generate
+  # sensible traffic, and let the switch raise its own events. 
+  
   _core_name = "debugger"
 
   _wantComponents = ["topology", "openflow_topology"]
@@ -305,25 +309,11 @@ class FuzzTester (EventMixin):
     for switch in self.live_switches():
       if self.random.random() < self.of_message_generation_rate:
         # FIXME do something smarter here than just generate packet ins
-        event_type = PacketIn
-        event = self.event_generator.generate(event_type, switch)
-        """
         log.debug("triggering a random event")
-        # trigger a random event handler.
-        # TODO: trigger more than one in a given round?
-        num_relevant_event_types = len(switch._eventMixin_handlers)
-        if num_relevant_event_types == 0:
-          log.warn("No registered event handlers for switch %s found" % str(switch))
-          continue
-        event_type = self.random.choice(switch._eventMixin_handlers.keys())
-        event = self.event_generator.generate(event_type, switch)
-        handlers = switch._eventMixin_handlers[event_type]
-        # TODO: we need a way to distinguish client handler's from other
-        # handlers. For now just assume that the first one is the client's.
-        # handlers are tuples: (priority, handler, once, eid)
-        handler = handlers[0][1]
-        handler(event)
-        """
+        # event_type = self.random.choice(switch._eventMixin_handlers.keys()) 
+        event_type = PacketIn
+        # Generates a
+        self.event_generator.generate(event_type, switch)
 
   def invariant_check_prompt(self):
     answer = msg.raw_input('Check Invariants? [Ny]')
@@ -353,9 +343,7 @@ class FuzzTester (EventMixin):
       else:
         msg.fail("Invariant violated!")
 
-  # TODO: do we need to define more event types? e.g., packet delivered,
-  # controller crashed, etc. An alternative might be to just generate
-  # sensible traffic, and let the switch raise its own events.
+
 
 
 if __name__ == "__main__":

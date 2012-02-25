@@ -23,6 +23,7 @@ class EventGenerator (object):
 
     return self._event_generators[eventType](switch)
 
+  # Generates an ICMP ping, and feeds it to the switch_impl
   def packet_in(self, switch):
     # randomly choose an in_port.
     if len(switch.ports) == 0:
