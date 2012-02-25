@@ -5,7 +5,7 @@ from pox.lib.packet.ethernet import *
 from pox.lib.packet.ipv4 import *
 from pox.lib.packet.icmp import *
 
-class EventGenerator (object):
+class TrafficGenerator (object):
   """
   Generate sensible randomly generated (openflow) events
   """
@@ -13,23 +13,23 @@ class EventGenerator (object):
   def __init__(self, random):
     self.random = random
 
-    self._event_generators = {
-      PacketIn : self.packet_in
+    self._packet_generators = {
+      "icmp_ping" : self.icmp_ping
     }
 
-  def generate(self, eventType, switch):
-    if eventType not in self._event_generators:
-      raise AttributeError("Unknown event type %s" % str(eventType))
+  def generate(self, packet_type, switch_impl):
+    if packet_type not in self._packet_generators:
+      raise AttributeError("Unknown event type %s" % str(packet_type))
 
-    return self._event_generators[eventType](switch)
+    return self._packet_generators[packet_type](switch_impl)
 
-  # Generates an ICMP ping, and feeds it to the switch_impl
-  def packet_in(self, switch):
+  # Generates an ICMP ping, and feeds it to the switch_impl_impl
+  def icmp_ping(self, switch_impl):
     # randomly choose an in_port.
-    if len(switch.ports) == 0:
-      raise RuntimeError("No Ports Registered on switch! %s" % str(switch)) # TODO:
-    # Fixme just use client ports for packet ins -- not packets from within the network
-    in_port = self.random.choice(switch.ports.values())
+    if len(switch_impl.ports) == 0:
+      raise RuntimeError("No Ports Registered on switch_impl! %s" % str(switch_impl)) # TODO:
+    # TODO: just use access links for packet ins -- not packets from within the network
+    in_port = self.random.choice(switch_impl.ports.values())
     e = ethernet()
     # TODO: need a better way to create random MAC addresses
     e.src = EthAddr(struct.pack("Q",self.random.randint(1,0xFF))[:6])
@@ -48,4 +48,5 @@ class EventGenerator (object):
     buffer_id = self.random.randint(0,0xFFFFFFFF)
     reason = None
 
-    switch.process_packet(e, in_port=in_port.port_no)
+    # Feed the packet to the switch_impl
+    switch_impl.process_packet(e, in_port=in_port.port_no)

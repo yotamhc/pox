@@ -15,7 +15,7 @@ from pox.lib.revent.revent import *
 from pox.openflow.libopenflow_01 import ofp_action_output
 import pox.debugger.topology_generator as topology_generator
 from pox.debugger.debugger_entities import *
-from event_generator import EventGenerator
+from traffic_generator import TrafficGenerator
 from invariant_checker import InvariantChecker
 
 import sys
@@ -119,7 +119,7 @@ class FuzzTester (EventMixin):
     # Make execution deterministic to allow the user to easily replay
     self.seed = 0.0
     self.random = random.Random(self.seed)
-    self.event_generator = EventGenerator(self.random)
+    self.traffic_generator = TrafficGenerator(self.random)
     self.invariant_checker = InvariantChecker(self)
 
     # TODO: future feature: log all events, and allow user to (interactively)
@@ -309,11 +309,11 @@ class FuzzTester (EventMixin):
     for switch in self.live_switches():
       if self.random.random() < self.of_message_generation_rate:
         # FIXME do something smarter here than just generate packet ins
-        log.debug("triggering a random event")
+        log.debug("injecting a random packet")
         # event_type = self.random.choice(switch._eventMixin_handlers.keys()) 
-        event_type = PacketIn
+        traffic_type = "icmp_ping"
         # Generates a
-        self.event_generator.generate(event_type, switch)
+        self.traffic_generator.generate(traffic_type, switch)
 
   def invariant_check_prompt(self):
     answer = msg.raw_input('Check Invariants? [Ny]')
