@@ -68,7 +68,6 @@ the messages it receives, and it can be polled later.
 """
 
 
-
 from pox.lib.revent import *
 from pox.lib.recoco import *
 import pox.core

@@ -49,6 +49,9 @@ import pox.openflow.of_01
 # Turn on extra info for event exceptions
 import pox.lib.revent as revent
 
+import logging
+import logging.config
+import os
 import sys
 options = None
 
@@ -234,6 +237,7 @@ verbose = False
 enable_openflow = True
 debug = False
 deadlock = False
+custom_log_config = None
 
 def _opt_deadlock(v):
   global deadlock
@@ -259,8 +263,11 @@ def _opt_debug (v):
     # debug implies no openflow 
     _opt_no_openflow(True)
     _opt_no_cli(True)
-    
-    
+
+def _opt_log_config (v):
+  global custom_log_config
+  custom_log_config = str(v)
+
 def process_options ():
   for k,v in options.iteritems():
     rk = '_opt_' + k.replace("-", "_")
@@ -281,6 +288,9 @@ def pre_startup ():
 
   if enable_openflow:
     pox.openflow.launch() # Default OpenFlow launch
+
+  if custom_log_config:
+    setup_logging(custom_log_config, True)
 
   return True
 
@@ -319,7 +329,20 @@ def _monkeypatch_console ():
   except:
     pass
 
+def setup_logging(log_config="logging.cfg", fail_if_non_existent=False):
+  if os.path.exists(log_config):
+    logging.config.fileConfig(log_config)
+  else:
+    if fail_if_non_existent:
+      raise IOError("Could not find logging config file: %s" % log_config)
+
+    _default_log_handler = logging.StreamHandler()
+    _default_log_handler.setFormatter(logging.Formatter(logging.BASIC_FORMAT))
+    logging.getLogger().addHandler(_default_log_handler)
+    logging.getLogger().setLevel(logging.DEBUG)
+
 def main ():
+  setup_logging()
   _monkeypatch_console()
   try:
     if doLaunch():
