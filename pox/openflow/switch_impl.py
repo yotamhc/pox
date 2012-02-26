@@ -326,21 +326,18 @@ class ControllerConnection (object):
   # recoco Connection Listener loop)
   # Globally unique identifier for the Connection instance
   ID = 0
-
+  
+  # These methods are called externally by IOWorker
   def msg (self, m):
-    #print str(self), m
     self.log.debug(str(self) + " " + str(m))
   def err (self, m):
-    #print str(self), m
     self.log.error(str(self) + " " + str(m))
   def info (self, m):
-    pass
-    #print str(self), m
     self.log.info(str(self) + " " + str(m))
-
-  def __init__ (self, sock, ofp_handlers):
-    self.sock = sock
-    self.buf = ''
+  
+  def __init__ (self, io_worker, ofp_handlers):
+    self.io_worker = io_worker
+    self.io_worker.read_handler = self.read
     ControllerConnection.ID += 1
     self.ID = ControllerConnection.ID
     self.log = core.getLogger("ControllerConnection(id=%d)" % self.ID)
@@ -348,9 +345,6 @@ class ControllerConnection (object):
     self.ofp_msgs = make_type_to_class_table()
     ## Hash from ofp_type -> handler(packet)
     self.ofp_handlers = ofp_handlers
-
-  def fileno (self):
-    return self.sock.fileno()
 
   def send (self, data):
     """
@@ -361,68 +355,38 @@ class ControllerConnection (object):
     way, you can just pass one of the OpenFlow objects from the OpenFlow
     library to it and get the expected result, for example.
     """
-    # TODO: this is taken directly from of_01.Connection. Refoactor to reduce
-    # redundancy
     if type(data) is not bytes:
       if hasattr(data, 'pack'):
         data = data.pack()
-
-    if deferredSender.sending:
-      self.log.debug("deferred sender is sending!")
-      deferredSender.send(self, data)
-      return
-    try:
-      l = self.sock.send(data)
-      if l != len(data):
-        self.msg("Didn't send complete buffer.")
-        data = data[l:]
-        deferredSender.send(self, data)
-    except socket.error as (errno, strerror):
-      if errno == EAGAIN:
-        self.msg("Out of send buffer space.  Consider increasing SO_SNDBUF.")
-        deferredSender.send(self, data)
-      else:
-        self.msg("Socket error: " + strerror)
-        self.disconnect()
-
-  def read (self):
-    """
-    Read data from this connection.
-
-    Note: if no data is available to read, this method will block. Only invoke
-    after select() has returned this socket.
-    """
+    self.io_worker.send(data)
+    
+  def read (self, message):
+    '''
+    called only on with complete messages
+    '''
     # TODO: this is taken directly from of_01.Connection. The only difference is the
     # event handlers. Refactor to reduce redundancy.
-    d = self.sock.recv(2048)
-    if len(d) == 0:
-      return False
-    self.buf += d
-    l = len(self.buf)
-    while l > 4:
-      if ord(self.buf[0]) != OFP_VERSION:
-        self.log.warning("Bad OpenFlow version (" + str(ord(self.buf[0])) +
-                    ") on connection " + str(self))
+    if ord(message[0]) != OFP_VERSION:
+        self.log.warning("Bad OpenFlow version (" + str(ord(message[0])) +
+                          ") on connection " + str(self))
         return False
-      # OpenFlow parsing occurs here:
-      ofp_type = ord(self.buf[1])
-      packet_length = ord(self.buf[2]) << 8 | ord(self.buf[3])
-      if packet_length > l: break
-      msg = self.ofp_msgs[ofp_type]()
-      msg.unpack(self.buf)
-      self.buf = self.buf[packet_length:]
-      l = len(self.buf)
-      try:
-        if ofp_type not in self.ofp_handlers:
-          raise RuntimeError("No handler for ofp_type %d" % ofp_type)
+    # OpenFlow parsing occurs here:
+    ofp_type = ord(message[1])
+    packet_length = ord(message[2]) << 8 | ord(message[3])
+    if packet_length != len(message):
+        raise RuntimeError("Packet length %d != message length %d" % (packet_length, len(message)))
+    msg_obj = self.ofp_msgs[ofp_type]()
+    msg_obj.unpack(message)
+    message = message[packet_length:]
+    try:
+      if ofp_type not in self.ofp_handlers:
+        raise RuntimeError("No handler for ofp_type %d" % ofp_type)
 
-        h = self.ofp_handlers[ofp_type]
-        h(msg)
-      except Exception as e:
-        self.log.exception(e)
-        #self.log.exception("%s: Exception while handling OpenFlow message:\n%s %s",
-        #              self,self,("\n" + str(self) + " ").join(str(msg).split('\n')))
-        continue
+      h = self.ofp_handlers[ofp_type]
+      h(msg_obj)
+    except Exception as e:
+      self.log.exception(e)
+      return False
     return True
 
   def disconnect(self):
