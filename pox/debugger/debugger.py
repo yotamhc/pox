@@ -15,7 +15,7 @@ from pox.lib.revent.revent import *
 from pox.openflow.libopenflow_01 import ofp_action_output
 import pox.debugger.topology_generator as topology_generator
 from pox.debugger.debugger_entities import *
-from event_generator import EventGenerator
+from traffic_generator import TrafficGenerator
 from invariant_checker import InvariantChecker
 
 import sys
@@ -59,10 +59,12 @@ class msg():
     print msg.BEGIN + msg.B_RED + msg.BEGIN + msg.WHITE + message + msg.END
 
 class FuzzTester (EventMixin):
-    # TODO: future feature: split this into Manager superclass and
-    # simulator, emulator subclasses. Use vector clocks to take
-    # consistent snapshots of emulated network
-
+  # TODO: future feature: split this into Manager superclass and
+  # simulator, emulator subclasses. Use vector clocks to take
+  # consistent snapshots of emulated network
+  
+  # TODO: do we need to define more event types? e.g., packet delivered,
+  # controller crashed, etc...
   _core_name = "debugger"
 
   _wantComponents = ["topology", "openflow_topology"]
@@ -115,7 +117,7 @@ class FuzzTester (EventMixin):
     # Make execution deterministic to allow the user to easily replay
     self.seed = 0.0
     self.random = random.Random(self.seed)
-    self.event_generator = EventGenerator(self.random)
+    self.traffic_generator = TrafficGenerator(self.random)
     self.invariant_checker = InvariantChecker(self)
 
     # TODO: future feature: log all events, and allow user to (interactively)
@@ -187,7 +189,7 @@ class FuzzTester (EventMixin):
     # TODO: allow the user to specify a topology
     # The next line should cause the client to register additional
     # handlers on switch entities
-    (self.panel, self.switches) = topology_generator.populate()
+    (self.panel, self.switch_impls) = topology_generator.populate()
 
     self.loop()
 
@@ -216,16 +218,16 @@ class FuzzTester (EventMixin):
   #     Bookkeeping methods                      #
   # ============================================ #
   def all_switches(self):
-    """ Return all switches currently registered """
-    return self.switches
+    """ Return all switch_impls currently registered """
+    return self.switch_impls
 
   def crashed_switches(self):
-    """ Return the switches which are currently down """
-    return filter(lambda switch : switch.failed, self.all_switches())
+    """ Return the switch_impls which are currently down """
+    return filter(lambda switch_impl : switch_impl.failed, self.all_switches())
 
   def live_switches(self):
-    """ Return the switches which are currently up """
-    return filter(lambda switch : not switch.failed, self.all_switches())
+    """ Return the switch_impls which are currently up """
+    return filter(lambda switch_impl : not switch_impl.failed, self.all_switches())
 
   # ============================================ #
   #      Methods to trigger events               #
@@ -261,20 +263,20 @@ class FuzzTester (EventMixin):
     # Decide whether to crash or restart switches, links and controllers
     def crash_switches():
       crashed = set()
-      for switch in self.live_switches():
+      for switch_impl in self.live_switches():
         if self.random.random() < self.failure_rate:
-          msg.event("Crashing switch %s" % str(switch))
-          switch.fail()
-          crashed.add(switch)
+          msg.event("Crashing switch_impl %s" % str(switch_impl))
+          switch_impl.fail()
+          crashed.add(switch_impl)
       return crashed
 
     def restart_switches(crashed_this_round):
-      for switch in self.crashed_switches():
-        if switch in crashed_this_round:
+      for switch_impl in self.crashed_switches():
+        if switch_impl in crashed_this_round:
           continue
         if self.random.random() < self.recovery_rate:
-          msg.event("Rebooting switch %s" % str(switch))
-          switch.recover()
+          msg.event("Rebooting switch_impl %s" % str(switch_impl))
+          switch_impl.recover()
 
     def cut_links():
       pass
@@ -302,28 +304,14 @@ class FuzzTester (EventMixin):
   def fuzz_traffic(self):
     # randomly generate messages from switches
     # TODO: future feature: trace-driven packet generation
-    for switch in self.live_switches():
+    for switch_impl in self.live_switches():
       if self.random.random() < self.of_message_generation_rate:
         # FIXME do something smarter here than just generate packet ins
-        event_type = PacketIn
-        event = self.event_generator.generate(event_type, switch)
-        """
-        log.debug("triggering a random event")
-        # trigger a random event handler.
-        # TODO: trigger more than one in a given round?
-        num_relevant_event_types = len(switch._eventMixin_handlers)
-        if num_relevant_event_types == 0:
-          log.warn("No registered event handlers for switch %s found" % str(switch))
-          continue
-        event_type = self.random.choice(switch._eventMixin_handlers.keys())
-        event = self.event_generator.generate(event_type, switch)
-        handlers = switch._eventMixin_handlers[event_type]
-        # TODO: we need a way to distinguish client handler's from other
-        # handlers. For now just assume that the first one is the client's.
-        # handlers are tuples: (priority, handler, once, eid)
-        handler = handlers[0][1]
-        handler(event)
-        """
+        log.debug("injecting a random packet")
+        # event_type = self.random.choice(switch_impl._eventMixin_handlers.keys()) 
+        traffic_type = "icmp_ping"
+        # Generates a packet, and feeds it to the switch_impl
+        self.traffic_generator.generate(traffic_type, switch_impl)
 
   def invariant_check_prompt(self):
     answer = msg.raw_input('Check Invariants? [Ny]')
@@ -353,9 +341,7 @@ class FuzzTester (EventMixin):
       else:
         msg.fail("Invariant violated!")
 
-  # TODO: do we need to define more event types? e.g., packet delivered,
-  # controller crashed, etc. An alternative might be to just generate
-  # sensible traffic, and let the switch raise its own events.
+
 
 
 if __name__ == "__main__":
