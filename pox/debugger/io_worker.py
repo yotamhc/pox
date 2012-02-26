@@ -11,86 +11,115 @@ from pox.core import core
 from pox.lib.recoco import *
 from pox.lib.util import assert_type
 
-class IOWorker(Task):
+class IOWorker(object):
+  """ Generic IOWorker class. Defines the IO contract for our simulator. Fire and forget semantics for send. 
+      Received data is being queued until explicitely consumed by the client
   """
-  recoco thread for communication between a switch_impl and a controllers
+  def __init__(self):
+    self.send_buf = ""
+    self.receive_buf = ""
+    self.on_data_receive = lambda: None
+
+  def send(object, data):
+    """ send data from the client side. fire and forget. """
+    assert_type("data", data, [bytes], none_ok=False)
+    self.send_buf += data
+
+  def push_receive_data(self, new_data):
+    """ notify client of new received data. """
+    self.receive_buf += new_data
+    self.on_data_receive(self, self.receive_buf)
+
+  def consume_receive_buf(self, l):
+    """ called from the client to consume receive buffer """
+    assert(len(self.receive_buf) > l)
+    self.receive_buf = self.receive_buf[l:]
+
+  @property
+  def ready_to_send(self):
+    return len(self.send_buf) > 0
+
+  def consume_send_buf(self, l):
+    assert(len(self.send_buf)>=l)
+    self.send_buf = self.send_buf[l:]
+
+  def close(self):
+    pass
+
+class RecocoIOWorker(IOWorker):
+  """ An IOWorker that works with our RecocoIOLoop, and notifies it via pinger """
+  def __init__(self, socket, pinger):
+    IOWorker.__init__(self)
+    # list of (potentially partial) messages to send
+    self.pinger = pinger
+
+  def fileno(self):
+    return self.socket.fileno
+
+  def send(self, data):
+    IOWorker.send(self, data)
+    self.pinger.ping()
+
+class RecocoIOLoop(Task):
   """
-  # TODO: this is highly redundant with of_01.Task... need to refactor Select functionality
+  recoco task that handles the actual IO for our IO workers
+  """
   _select_timeout = 5
+  _BUF_SIZE = 8192
 
   def __init__ (self, socket):
     Task.__init__(self)
-    self.socket = socket
-    # list of (potentially partial) messages to send
-    self.write_buf = []
-    # We only buffer a single read message at a time
-    self.read_buf = ""
+    self.workers = Set()
+    self.pinger = pox.lib.util.makePinger()
 
-    core.addListener(pox.core.GoingUpEvent, self._handle_GoingUpEvent)
+  def create_worker_for_socket(self, socket):
+    worker = IOWorker(socket, self.pinger)
+    self.workers.append(worker)
+    self.pinger.ping()
+    return worker
 
-  def _handle_GoingUpEvent (self, event):
-    self.start()
-
-  def fileno (self):
-    return self.controller_sock.fileno()
-
-  def send(self, data):
-    assert_type("data", data, [bytes], none_ok=False)
-    self.write_buf.append(data)
-
-  def _try_disconnect(self, con):
-    ''' helper method '''
-    try:
-      con.disconnect(True)
-    except:
-      pass
+  def stop(self):
+    self.running = False
+    self.pinger.ping()
 
   def run (self):
-    con = None
-    while core.running:
+    self.running = True
+    while self.running
       try:
-        while True:
-          read_sockets = [self.socket]
-          exception_sockets = [self.socket]
-          write_sockets = []
-          if len(self.write_buf) > 0:
-            write_sockets.append(self.socket)
+        read_sockets = [ worker for worker in self.workers ] + [ self.pinger ]
+        write_sockets = [ worker for worker in self.workers if worker.ready_to_send ]
+        exception_sockets = [ worker in self.workers ]
 
-          # NOTE: this is not a conventional
-          rlist, wlist, elist = yield Select(read_sockets, write_sockets,
-                  exception_sockets, self._select_timeout)
+        rlist, wlist, elist = yield Select(read_sockets, write_sockets,
+                exception_sockets, self._select_timeout)
 
-          for con in elist:
-            self._try_disconnect(con, self.socket)
+        if self.pinger in read_sockets:
+          self.pinger.pongAll()
+          read_sockets.remove(self.pinger)
 
-          for con in rlist:
-            try:
-              d = self.socket.recv(2048)
-              self.read_buf += d
-              l = len(self.read_buf)
-              while l > 4:
-                packet_length = ord(self.read_buf[2]) << 8 | ord(self.read_buf[3])
-                if packet_length > l:
-                  break
-                else:
-                  self.read_handler(self.read_buf[0:packet_length])
-                  # Will set to '' if there is no more data
-                  self.read_buf = self.read_buf[packet_length:]
-            except socket.error as (errno, strerror):
+        for worker in exception_sockets:
+          worker.close()
+          self.workers.remove(worker)
+
+        for worker in read_sockets:
+          try:
+            data = self.socket.recv(_BUF_SIZE)
+            worker.push_recv_data(data)
+          except socket.error as (errno, strerror):
+            con.msg("Socket error: " + strerror)
+            worker.close()
+            self.workers.remove(worker)
+
+        for worker in write_sockets:
+          try:
+            l = con.sock.send(worker.send_buf)
+            if l > 0:
+              worker.consume_send_buf(l)
+          except socket.error as (errno, strerror):
+            if errno != errno.EAGAIN:
               con.msg("Socket error: " + strerror)
-              con.disconnect()
+              worker.close()
+              self.workers.remove(worker)
 
-          for con in wlist:
-            data = self.write_buf.pop(0)
-            try:
-              l = con.sock.send(data)
-              if l != len(data):
-                data = data[l:]
-                self.write_buf.insert(0,data)
-                break
-            except socket.error as (errno, strerror):
-              if errno != errno.EAGAIN:
-                con.msg("Socket error: " + strerror)
-                con.disconnect()
       except exceptions.KeyboardInterrupt:
         break
