@@ -62,6 +62,8 @@ def create_switch(switch_id, num_ports):
   return FuzzSwitchImpl(dpid=switch_id, name="SoftSwitch(%d)" % switch_id, ports=ports)
 
 def create_mesh(num_switches=3):
+  ''' Returns (patch_panel, switches) '''
+  
   # Every switch has a link to every other switch, for N*(N-1) total ports
   ports_per_switch = num_switches - 1
 
@@ -73,27 +75,43 @@ def create_mesh(num_switches=3):
 
   return (patch_panel, switches)
 
-def connect_to_nom(switches):
-  # Now add switches to the master Topology cop
-  for switch in switches:
-    # TODO this is the hacky part around here. Need to figure out how to arbitrate between different
-    # instances of topology / controller etc.
-    (switch_socket, nom_socket) = MockSocket.pair()
+def connect_to_controllers(controller_info_list, switch_impls):
+  '''
+  Bind sockets from the switch_impls to the controllers. For now, assign each switch to the next
+  controller in the list in a round robin fashion.
+  
+  Controller info list is a list of (controller ip address, controller port number) tuples
+  
+  Return a list of socket objects
+  '''
+  controller_info_cycler = Cycler(controller_info_list)
+  controller_sockets = []
+  
+  for switch_impl in switch_impls:
+    # Socket to from the switch_impl to the controller
+    controller_socket = socket.socket()
+    # Set non-blocking
+    controller_socket.setblocking(0)
+    controller_info = controller_info_cycler.next()
+    try:
+      controller_socket.bind( controller_info )
+    except:
+      raise RuntimeError("Could not connect to controller %s:%d" % controller_info)
+    
+    switch_impl.set_socket(controller_socket)
+    controller_sockets.append(controller_socket)
+    
+  return controller_sockets
 
-    switch_connection = switch.set_socket(switch_socket)
-    switch_socket.set_on_ready_to_recv(lambda switch, length: switch_connection.read() )
-
-    # The Connection will start the OpenFlow handshake process, as specified in
-    # several spaghetti handlers in of_10.
-    # Eventually, this will result in a connection up event
-    nom_connection = Connection(nom_socket)
-    nom_socket.set_on_ready_to_recv(lambda switch, length: nom_connection.read() )
-  return switches
-
-def populate(num_switches=3):
+def populate(controller_info_list, num_switches=3):
+  '''
+  Populate the topology as a mesh of switches, connect the switches
+  to the controllers, and return 
+  (PatchPanel, switches, controller_sockets)
+  '''
   (panel, switches) = create_mesh(num_switches)
-  connect_to_nom(switches)
-  return (panel, switches)
+  controller_sockets = connect_to_controllers(controller_info_list, switches)
+  return (panel, switches, controller_sockets)
 
 class PatchPanel(object):
   """ A Patch panel. Contains a bunch of wires to forward packets between switches.
