@@ -64,9 +64,7 @@ class FuzzTester (EventMixin):
   # consistent snapshots of emulated network
   
   # TODO: do we need to define more event types? e.g., packet delivered,
-  # controller crashed, etc. An alternative might be to just generate
-  # sensible traffic, and let the switch raise its own events. 
-  
+  # controller crashed, etc...
   _core_name = "debugger"
 
   _wantComponents = ["topology", "openflow_topology"]
@@ -191,7 +189,7 @@ class FuzzTester (EventMixin):
     # TODO: allow the user to specify a topology
     # The next line should cause the client to register additional
     # handlers on switch entities
-    (self.panel, self.switches) = topology_generator.populate()
+    (self.panel, self.switch_impls) = topology_generator.populate()
 
     self.loop()
 
@@ -220,16 +218,16 @@ class FuzzTester (EventMixin):
   #     Bookkeeping methods                      #
   # ============================================ #
   def all_switches(self):
-    """ Return all switches currently registered """
-    return self.switches
+    """ Return all switch_impls currently registered """
+    return self.switch_impls
 
   def crashed_switches(self):
-    """ Return the switches which are currently down """
-    return filter(lambda switch : switch.failed, self.all_switches())
+    """ Return the switch_impls which are currently down """
+    return filter(lambda switch_impl : switch_impl.failed, self.all_switches())
 
   def live_switches(self):
-    """ Return the switches which are currently up """
-    return filter(lambda switch : not switch.failed, self.all_switches())
+    """ Return the switch_impls which are currently up """
+    return filter(lambda switch_impl : not switch_impl.failed, self.all_switches())
 
   # ============================================ #
   #      Methods to trigger events               #
@@ -265,20 +263,20 @@ class FuzzTester (EventMixin):
     # Decide whether to crash or restart switches, links and controllers
     def crash_switches():
       crashed = set()
-      for switch in self.live_switches():
+      for switch_impl in self.live_switches():
         if self.random.random() < self.failure_rate:
-          msg.event("Crashing switch %s" % str(switch))
-          switch.fail()
-          crashed.add(switch)
+          msg.event("Crashing switch_impl %s" % str(switch_impl))
+          switch_impl.fail()
+          crashed.add(switch_impl)
       return crashed
 
     def restart_switches(crashed_this_round):
-      for switch in self.crashed_switches():
-        if switch in crashed_this_round:
+      for switch_impl in self.crashed_switches():
+        if switch_impl in crashed_this_round:
           continue
         if self.random.random() < self.recovery_rate:
-          msg.event("Rebooting switch %s" % str(switch))
-          switch.recover()
+          msg.event("Rebooting switch_impl %s" % str(switch_impl))
+          switch_impl.recover()
 
     def cut_links():
       pass
@@ -306,14 +304,14 @@ class FuzzTester (EventMixin):
   def fuzz_traffic(self):
     # randomly generate messages from switches
     # TODO: future feature: trace-driven packet generation
-    for switch in self.live_switches():
+    for switch_impl in self.live_switches():
       if self.random.random() < self.of_message_generation_rate:
         # FIXME do something smarter here than just generate packet ins
         log.debug("injecting a random packet")
-        # event_type = self.random.choice(switch._eventMixin_handlers.keys()) 
+        # event_type = self.random.choice(switch_impl._eventMixin_handlers.keys()) 
         traffic_type = "icmp_ping"
-        # Generates a
-        self.traffic_generator.generate(traffic_type, switch)
+        # Generates a packet, and feeds it to the switch_impl
+        self.traffic_generator.generate(traffic_type, switch_impl)
 
   def invariant_check_prompt(self):
     answer = msg.raw_input('Check Invariants? [Ny]')
