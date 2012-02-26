@@ -306,6 +306,10 @@ class OpenFlowSwitch (EventMixin, Switch):
   def __repr__ (self):
     return "<%s %s>" % (self.__class__.__name__, dpidToStr(self.dpid))
 
+  @property
+  def name(self):
+    return repr(self)
+
 
 def launch ():
   if not core.hasComponent("openflow_topology"):
