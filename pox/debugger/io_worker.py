@@ -78,9 +78,13 @@ class RecocoIOLoop(Task):
     self.pinger.ping()
     return worker
 
+  def stop(self):
+    self.running = False
+    self.pinger.ping()
+
   def run (self):
     self.running = True
-    while core.running:
+    while self.running
       try:
         read_sockets = [ worker for worker in self.workers ] + [ self.pinger ]
         write_sockets = [ worker for worker in self.workers if worker.ready_to_send ]
