@@ -15,13 +15,13 @@ class IOWorker(Task):
   """
   recoco thread for communication between a switch_impl and a controllers
   """
-  # TODO: this is highly redundant with of_01.Task... need to refactor Select functionality 
+  # TODO: this is highly redundant with of_01.Task... need to refactor Select functionality
   _select_timeout = 5
-  
+
   def __init__ (self, socket):
     Task.__init__(self)
-    self.socket = socket 
-    # list of (potentially partial) messages to send 
+    self.socket = socket
+    # list of (potentially partial) messages to send
     self.write_buf = []
     # We only buffer a single read message at a time
     self.read_buf = ""
@@ -30,13 +30,13 @@ class IOWorker(Task):
 
   def _handle_GoingUpEvent (self, event):
     self.start()
-    
+
   def fileno (self):
     return self.controller_sock.fileno()
-  
+
   def send(self, data):
     assert_type("data", data, [bytes], none_ok=False)
-    self.write_buf.append(data) 
+    self.write_buf.append(data)
 
   def _try_disconnect(self, con):
     ''' helper method '''
@@ -62,7 +62,7 @@ class IOWorker(Task):
 
           for con in elist:
             self._try_disconnect(con, self.socket)
-            
+
           for con in rlist:
             try:
               d = self.socket.recv(2048)
@@ -71,11 +71,11 @@ class IOWorker(Task):
               while l > 4:
                 packet_length = ord(self.read_buf[2]) << 8 | ord(self.read_buf[3])
                 if packet_length > l:
-                    break
+                  break
                 else:
-                    self.read_handler(self.read_buf[0:packet_length])
-                    # Will set to '' if there is no more data
-                    self.read_buf = self.read_buf[packet_length:]
+                  self.read_handler(self.read_buf[0:packet_length])
+                  # Will set to '' if there is no more data
+                  self.read_buf = self.read_buf[packet_length:]
             except socket.error as (errno, strerror):
               con.msg("Socket error: " + strerror)
               con.disconnect()
@@ -85,7 +85,7 @@ class IOWorker(Task):
             try:
               l = con.sock.send(data)
               if l != len(data):
-                data = data[l:]  
+                data = data[l:]
                 self.write_buf.insert(0,data)
                 break
             except socket.error as (errno, strerror):
