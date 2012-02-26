@@ -17,10 +17,7 @@ processes. To emulate, we'll want to :
           and the control application?
 """
 
-from pox.openflow.topology import *
 from pox.openflow.switch_impl import SwitchImpl
-from pox.openflow.of_01 import Connection
-from pox.core import core
 
 # TODO: model hosts in the network!
 

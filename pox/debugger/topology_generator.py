@@ -19,14 +19,8 @@ TODO: should this topology include Hosts as well?
 '''
 
 from pox.debugger.debugger_entities import *
-from pox.openflow.libopenflow_01 import ofp_phy_port
 from pox.openflow.switch_impl import *
-import pox.topology.topology as topology
-from pox.controllers.distributed_controller import DistributedController
-from pox.core import core
-from mock_socket import MockSocket
 
-import struct
 from socket import *
 
 class Cycler():

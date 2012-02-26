@@ -1,6 +1,4 @@
 
-from pox.openflow import PacketIn
-from pox.openflow.libopenflow_01 import ofp_packet_in
 from pox.lib.packet.ethernet import *
 from pox.lib.packet.ipv4 import *
 from pox.lib.packet.icmp import *

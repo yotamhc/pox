@@ -8,13 +8,10 @@
 #       the user to examine the state of the network interactively (i.e.,
 #       provide them with the normal POX cli + the simulated events
 
-from pox.core import core
 import pox.openflow.libopenflow_01 as of
 from pox.lib.revent.revent import *
 
-from pox.openflow.libopenflow_01 import ofp_action_output
-import pox.debugger.topology_generator as topology_generator
-from pox.debugger.debugger_entities import *
+from debugger_entities import *
 from traffic_generator import TrafficGenerator
 from invariant_checker import InvariantChecker
 
@@ -26,8 +23,9 @@ import socket
 import time
 import random
 import os
+import logging
 
-log = core.getLogger("debugger")
+log = logging.getLogger("debugger")
 
 class msg():
   BEGIN = '\033[1;'
@@ -65,10 +63,7 @@ class FuzzTester (EventMixin):
   
   # TODO: do we need to define more event types? e.g., packet delivered,
   # controller crashed, etc...
-  _core_name = "debugger"
-
-  _wantComponents = ["topology", "openflow_topology"]
-
+  
   """
   This is part of a testing framework for controller applications. It
   acts as a replacement for pox.topology.
@@ -77,25 +72,17 @@ class FuzzTester (EventMixin):
   it will inject intelligently chosen mock events (and observe
   their responses?)
   """
-  def __init__(self, num_controllers):
-    self.num_controllers = num_controllers
-
-    self.core_up = False
-    self.listenTo(core)
-    if not core.listenToDependencies(self, self._wantComponents):
-      self.topology = None
-      log.debug("still waiting for my required components: %s"% repr(self._wantComponents))
-    else:
-      self.topology = core.topology
-      log.debug("ready on initialization")
-
+  def __init__(self):
     self.running = False
+    self.panel = None
+    self.switch_impls = []
 
     # TODO: make it easier for client to tweak these
     self.failure_rate = 0.5
     self.recovery_rate = 0.5
     self.drop_rate = 0.5
     self.delay_rate = 0.5
+    # TODO: should be "traffic_generation_rate"
     self.of_message_generation_rate = 0.5
 
     # Logical time (round #) for the simulation execution
@@ -136,61 +123,15 @@ class FuzzTester (EventMixin):
     #   EVERYTHING  # The user controls everything, including message ordering
     # ]
 
-  def _handle_ComponentRegistered (self, event):
-    """
-    A component was registered with pox.core. If we were dependent on it,
-    check again if all of our dependencies are now satisfied so we can boot.
-    """
-    if core.listenToDependencies(self, self._wantComponents):
-      self.topology = core.topology
-      log.info("initialization completed")
-      return EventRemove
-
-  def _handle_GoingUpEvent(self, going_up_event):
-    log.debug("going up event!")
-    self.core_up = True
-    if self._ready_to_start():
-      self.start()
-    else:
-      log.debug("Core is up, but not all controllers registered. Waiting..")
-      self.update_listener = self.topology.addListener(Update, self._handle_topology_update)
-
-  def _handle_topology_update(self, update_event):
-    log.debug("update event. checking if we're ready...")
-    if self._ready_to_start():
-      self.topology.removeListener(self.update_listener)
-      self.start()
-
-  def _ready_to_start(self):
-    controllers = self.topology.getEntitiesOfType(Controller, True)
-    if len(controllers) < self.num_controllers:
-      log.debug("_ready_to_start: waiting for %d controllers, have so far: %s" % (self.num_controllers, str(controllers)) )
-      return False
-
-    handshake_pending_controllers = filter(lambda c: not c.handshake_complete, controllers)
-    if len(handshake_pending_controllers) > 0:
-      log.debug("_ready_to_start: controllers with pending handshake: " + str(handshake_pending_controllers))
-      return False
-
-    if not self.core_up:
-      log.debug("_ready_to_start: Core not yet up")
-      return False
-
     # TODO: need a mechanism for signaling  when the distributed controller handshake has completed
 
-    return True
-
-  def start(self):
+  def start(self, panel, switch_impls):
     """
     Start the fuzzer loop!
     """
     log.debug("Starting fuzz loop")
-
-    # TODO: allow the user to specify a topology
-    # The next line should cause the client to register additional
-    # handlers on switch entities
-    (self.panel, self.switch_impls) = topology_generator.populate()
-
+    self.panel = panel
+    self.switch_impls = switch_impls
     self.loop()
 
   def loop(self):

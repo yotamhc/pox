@@ -1,13 +1,13 @@
 
-from pox.core import core
 from pox.openflow.libopenflow_01 import *
 from debugger_entities import *
 
 import xml.etree.ElementTree as ET
 import os
 import glob
+import logging
 
-log = core.getLogger("invariant_checker")
+log = logging.getLogger("invariant_checker")
 
 class InvariantChecker():
   def __init__(self, topology):
