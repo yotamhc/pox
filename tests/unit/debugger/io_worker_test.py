@@ -67,10 +67,10 @@ class RecocoIOLoopTest(unittest.TestCase):
       self.received = data
     worker.on_data_receive = r
 
-    # 'start' the run (dark generator magic here)
+    # 'start' the run (dark generator magic here). Does not actually execute run, but 'yield' a generator
     g = loop.run()
+    # g.next() will call it, and get as far as the 'yield select'
     select = g.next()
-    # this gets as far as the yield select
 
     # send data on other socket half
     right.send("hallo")
