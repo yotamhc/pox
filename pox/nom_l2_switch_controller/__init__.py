@@ -31,6 +31,9 @@ def launch (debug=False, distributed=False):
   elif type(distributed) == str:
     distributed = int(distributed)
 
+  import pox.openflow
+  pox.openflow.launch()
+
   import pox.openflow.topology
   pox.openflow.topology.launch()
 
