@@ -98,6 +98,10 @@ class DeferredIOWorker(object):
   def send(self, data):
     """ send data from the client side. fire and forget. """
     self.send_queue.put(data)
+    
+  def has_pending_sends(self):
+    ''' called by the "arbitrator" in charge of deferal '''
+    return not self.send_queue.empty()
   
   def permit_receive(self):
     data = self.receive_queue.get()
@@ -106,6 +110,10 @@ class DeferredIOWorker(object):
   def push_receive_data(self, new_data):
     ''' called from the Select loop '''
     self.receive_queue.put(new_data)
+    
+  def has_pending_receives(self):
+    ''' called by the "arbitrator" in charge of deferal '''
+    return not self.receive_queue.empty()
   
   # Delegation functions.
   # TODO: is there a more pythonic way to implement delegation?
