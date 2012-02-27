@@ -6,10 +6,13 @@ Created on Feb 25, 2012
 import exceptions
 import sys
 import errno
+import logging
 
 from pox.core import core
 from pox.lib.recoco import *
-from pox.lib.util import assert_type
+from pox.lib.util import assert_type, makePinger
+
+log = logging.getLogger()
 
 class IOWorker(object):
   """ Generic IOWorker class. Defines the IO contract for our simulator. Fire and forget semantics for send. 
@@ -74,7 +77,7 @@ class RecocoIOLoop(Task):
   def __init__ (self):
     Task.__init__(self)
     self.workers = set()
-    self.pinger = pox.lib.util.makePinger()
+    self.pinger = makePinger()
 
   def create_worker_for_socket(self, socket):
     worker = RecocoIOWorker(socket, self.pinger)
@@ -110,7 +113,7 @@ class RecocoIOLoop(Task):
             data = worker.socket.recv(self._BUF_SIZE)
             worker.push_receive_data(data)
           except socket.error as (errno, strerror):
-            con.msg("Socket error: " + strerror)
+            log.error("Socket error: " + strerror)
             worker.close()
             self.workers.remove(worker)
 
@@ -121,7 +124,7 @@ class RecocoIOLoop(Task):
               worker.consume_send_buf(l)
           except socket.error as (errno, strerror):
             if errno != errno.EAGAIN:
-              con.msg("Socket error: " + strerror)
+              log.error("Socket error: " + strerror)
               worker.close()
               self.workers.remove(worker)
 
