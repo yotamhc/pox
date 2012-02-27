@@ -20,8 +20,9 @@ TODO: should this topology include Hosts as well?
 
 from pox.debugger.debugger_entities import *
 from pox.openflow.switch_impl import *
-
-from socket import *
+import socket
+import time
+import errno
 
 class Cycler():
   """
@@ -86,11 +87,21 @@ def connect_to_controllers(controller_info_list, io_worker_generator, switch_imp
     controller_socket = socket.socket()
     # Set non-blocking
     controller_info = controller_info_cycler.next()
-    try:
-      controller_socket.bind( (controller_info.address, controller_info.port) )
-    except:
-      raise RuntimeError("Could not connect to controller %s:%d" % controller_info)
-    
+    backoff_seconds = 1
+    while True:
+      try:
+        controller_socket.connect( (controller_info.address, controller_info.port) )
+        break
+      except socket.error as (errno, strerror):
+        if errno == errno.ECONNREFUSED:
+          backoff_seconds <<= 1 
+          if backoff_seconds >= 64:
+            raise RuntimeError("Could not connect to controller %s:%d" % (controller_info.address, controller_info.port))
+          else:
+            time.sleep(backoff_seconds)
+        else:
+          raise RuntimeError(strerror)
+        
     controller_socket.setblocking(0)
     io_worker = io_worker_generator(controller_socket)
     switch_impl.set_socket(io_worker)
