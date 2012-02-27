@@ -69,7 +69,7 @@ def create_mesh(num_switches=3):
 
   return (patch_panel, switches)
 
-def connect_to_controllers(controller_info_list, switch_impls):
+def connect_to_controllers(controller_info_list, io_worker_generator, switch_impls):
   '''
   Bind sockets from the switch_impls to the controllers. For now, assign each switch to the next
   controller in the list in a round robin fashion.
@@ -79,33 +79,31 @@ def connect_to_controllers(controller_info_list, switch_impls):
   Return a list of socket objects
   '''
   controller_info_cycler = Cycler(controller_info_list)
-  controller_sockets = []
   
   for switch_impl in switch_impls:
+    # TODO: what if the controller is slow to boot?
     # Socket to from the switch_impl to the controller
     controller_socket = socket.socket()
     # Set non-blocking
-    controller_socket.setblocking(0)
     controller_info = controller_info_cycler.next()
     try:
-      controller_socket.bind( controller_info )
+      controller_socket.bind( (controller_info.address, controller_info.port) )
     except:
       raise RuntimeError("Could not connect to controller %s:%d" % controller_info)
     
-    switch_impl.set_socket(controller_socket)
-    controller_sockets.append(controller_socket)
-    
-  return controller_sockets
+    controller_socket.setblocking(0)
+    io_worker = io_worker_generator(controller_socket)
+    switch_impl.set_socket(io_worker)
 
-def populate(controller_info_list, num_switches=3):
+def populate(controller_config_list, io_worker_generator, num_switches=3):
   '''
   Populate the topology as a mesh of switches, connect the switches
   to the controllers, and return 
   (PatchPanel, switches, controller_sockets)
   '''
   (panel, switches) = create_mesh(num_switches)
-  controller_sockets = connect_to_controllers(controller_info_list, switches)
-  return (panel, switches, controller_sockets)
+  connect_to_controllers(controller_config_list, io_worker_generator, switches)
+  return (panel, switches)
 
 class PatchPanel(object):
   """ A Patch panel. Contains a bunch of wires to forward packets between switches.
