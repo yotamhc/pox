@@ -78,12 +78,14 @@ class FuzzTester (EventMixin):
     self.switch_impls = []
 
     # TODO: make it easier for client to tweak these
-    self.failure_rate = 0.5
-    self.recovery_rate = 0.5
-    self.drop_rate = 0.5
-    self.delay_rate = 0.5
-    # TODO: should be "traffic_generation_rate"
-    self.of_message_generation_rate = 0.5
+    self.switch_failure_rate = 0.5
+    self.switch_recovery_rate = 0.5
+    self.control_channel_failure_rate = 0.0
+    self.control_channel_recovery_rate = 0.0
+    self.controlplane_delay_rate = 0.5
+    self.dataplane_drop_rate = 0.5
+    self.dataplane_delay_rate = 0.5
+    self.traffic_generation_rate = 0.5
 
     # Logical time (round #) for the simulation execution
     self.logical_time = 0
@@ -172,38 +174,39 @@ class FuzzTester (EventMixin):
   #      Methods to trigger events               #
   # ============================================ #
   def trigger_events(self):
-    self.check_in_transit()
-    self.check_crashes()
+    self.check_dataplane()
+    self.check_controlplane()
+    self.check_switch_crashes()
+    self.check_control_channel_crashes()
     self.check_timeouts()
     self.fuzz_traffic()
 
-  def check_in_transit(self):
-    # Decide whether to delay, drop, or deliver packets
-    # TODO: interpose on connection objects to grab their messages
-    # TODO: track messages from switch to switch, not just switch to controller
-    # REVIEW: are these (a) /OF control plane messages/ or (b) packets/?
-    # if (b) name accordingly
-    # if (a) AFAIK, OF control plane should never be dropped, so not sure if the functionality is needed here.
-    # This the delaying models switch specific queuing, it should maybe be implemented by the switch?
-    for msg in self.in_transit_messages:
-      if self.random.random() < self.delay_rate:
-        # Delay the message
-        msg.delayed_rounds += 1
-      elif self.random.random() < self.drop_rate:
-        # Drop the message
-        # TODO: Don't drop TCP messages... that would just be silly.
-        self.dropped_messages.add(msg)
-        self.in_transit_messages.remove(msg)
-      else:
-        # TODO: deliver the message
-        pass
+  def check_dataplane(self):
+    ''' Decide whether to delay, drop, or deliver packets '''
+    # TODO: interpose on panel 
+    #for msg in self.in_transit_messages:
+    #  if self.random.random() < self.dataplane_delay_rate:
+    #    # Delay the message
+    #    msg.delayed_rounds += 1
+    #  elif self.random.random() < self.dataplane_drop_rate:
+    #    # Drop the message
+    #    self.dropped_messages.add(msg)
+    #    self.in_transit_messages.remove(msg)
+    #  else:
+    #    # TODO: deliver the message
+    #    pass
+    pass
+    
+  def check_controlplane(self):
+    ''' Decide whether to delay or deliver packets '''
+    pass
 
-  def check_crashes(self):
-    # Decide whether to crash or restart switches, links and controllers
+  def check_switch_crashes(self):
+    ''' Decide whether to crash or restart switches, links and controllers '''
     def crash_switches():
       crashed = set()
       for switch_impl in self.live_switches():
-        if self.random.random() < self.failure_rate:
+        if self.random.random() < self.switch_failure_rate:
           msg.event("Crashing switch_impl %s" % str(switch_impl))
           switch_impl.fail()
           crashed.add(switch_impl)
@@ -213,7 +216,7 @@ class FuzzTester (EventMixin):
       for switch_impl in self.crashed_switches():
         if switch_impl in crashed_this_round:
           continue
-        if self.random.random() < self.recovery_rate:
+        if self.random.random() < self.switch_recovery_rate:
           msg.event("Rebooting switch_impl %s" % str(switch_impl))
           switch_impl.recover()
 
@@ -223,18 +226,13 @@ class FuzzTester (EventMixin):
     def repair_links():
       pass
 
-    def crash_controllers():
-      pass
-
-    def restart_controllers():
-      pass
-
     crashed = crash_switches()
     restart_switches(crashed)
     cut_links()
     repair_links()
-    crash_controllers()
-    restart_controllers()
+  
+  def check_control_channel_crashes(self):
+    pass
 
   def check_timeouts(self):
     # Interpose on timeouts
@@ -244,7 +242,7 @@ class FuzzTester (EventMixin):
     # randomly generate messages from switches
     # TODO: future feature: trace-driven packet generation
     for switch_impl in self.live_switches():
-      if self.random.random() < self.of_message_generation_rate:
+      if self.random.random() < self.traffic_generation_rate:
         # FIXME do something smarter here than just generate packet ins
         log.debug("injecting a random packet")
         # event_type = self.random.choice(switch_impl._eventMixin_handlers.keys()) 
@@ -280,8 +278,3 @@ class FuzzTester (EventMixin):
       else:
         msg.fail("Invariant violated!")
 
-
-
-
-if __name__ == "__main__":
-  pass
