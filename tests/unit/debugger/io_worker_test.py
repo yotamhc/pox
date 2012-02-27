@@ -56,7 +56,7 @@ class RecocoIOLoopTest(unittest.TestCase):
     loop = RecocoIOLoop()
     loop.stop()
 
-  def test_run(self):
+  def test_run_read(self):
     loop = RecocoIOLoop()
     (left, right) = MockSocket.pair()
     worker = loop.create_worker_for_socket(left)
@@ -81,3 +81,21 @@ class RecocoIOLoopTest(unittest.TestCase):
     # that should result in the socket being red the data being handed
     # to the ioworker, the callback being called. Everybody happy.
     self.assertEquals(self.received, "hallo")
+
+  def test_run_write(self):
+    loop = RecocoIOLoop()
+    (left, right) = MockSocket.pair()
+    worker = loop.create_worker_for_socket(left)
+
+    worker.send("heppo")
+    # 'start' the run (dark generator magic here). Does not actually execute run, but 'yield' a generator
+    g = loop.run()
+    # g.next() will call it, and get as far as the 'yield select'
+    select = g.next()
+
+    # now we emulate the return value of the select ([rlist],[wlist], [elist])
+    g.send(([], [worker], []))
+
+    # that should result in the stuff being sent on the socket
+    self.assertEqual(right.recv(), "heppo")
+

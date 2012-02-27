@@ -113,7 +113,7 @@ class RecocoIOLoop(Task):
 
         for worker in wlist:
           try:
-            l = con.sock.send(worker.send_buf)
+            l = worker.socket.send(worker.send_buf)
             if l > 0:
               worker.consume_send_buf(l)
           except socket.error as (errno, strerror):
