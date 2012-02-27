@@ -24,8 +24,8 @@ class IOWorkerTest(unittest.TestCase):
   def test_basic_receive(self):
     i = IOWorker()
     self.data = None
-    def d(worker, new_data):
-      self.data = new_data
+    def d(worker):
+      self.data = worker.peek_receive_buf()
     i.on_data_receive = d
     i.push_receive_data("bar")
     self.assertEqual(self.data, "bar")
@@ -36,9 +36,9 @@ class IOWorkerTest(unittest.TestCase):
   def test_receive_consume(self):
     i = IOWorker()
     self.data = None
-    def consume(worker, new_data):
-      self.data = new_data
-      worker.consume_receive_buf(len(new_data))
+    def consume(worker):
+      self.data = worker.peek_receive_buf()
+      worker.consume_receive_buf(len(self.data))
     i.on_data_receive = consume
     i.push_receive_data("bar")
     self.assertEqual(self.data, "bar")
@@ -63,8 +63,8 @@ class RecocoIOLoopTest(unittest.TestCase):
 
     # callback for ioworker to record receiving
     self.received = None
-    def r(worker, data):
-      self.received = data
+    def r(worker):
+      self.received = worker.peek_receive_buf()
     worker.on_data_receive = r
 
     # 'start' the run (dark generator magic here). Does not actually execute run, but 'yield' a generator
