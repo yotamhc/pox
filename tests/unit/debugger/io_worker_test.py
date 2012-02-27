@@ -26,7 +26,7 @@ class IOWorkerTest(unittest.TestCase):
     self.data = None
     def d(worker):
       self.data = worker.peek_receive_buf()
-    i.on_data_receive = d
+    i.set_receive_handler(d)
     i.push_receive_data("bar")
     self.assertEqual(self.data, "bar")
     # d does not consume the data
@@ -39,7 +39,7 @@ class IOWorkerTest(unittest.TestCase):
     def consume(worker):
       self.data = worker.peek_receive_buf()
       worker.consume_receive_buf(len(self.data))
-    i.on_data_receive = consume
+    i.set_receive_handler(consume)
     i.push_receive_data("bar")
     self.assertEqual(self.data, "bar")
     # data has been consumed
@@ -65,7 +65,7 @@ class RecocoIOLoopTest(unittest.TestCase):
     self.received = None
     def r(worker):
       self.received = worker.peek_receive_buf()
-    worker.on_data_receive = r
+    worker.set_recieve_handler(r)
 
     # 'start' the run (dark generator magic here). Does not actually execute run, but 'yield' a generator
     g = loop.run()
