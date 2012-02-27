@@ -361,7 +361,7 @@ class ControllerConnection (object):
     self.io_worker.send(data)
     
   def read (self, io_worker):
-    message = io_worker.peak_read_buf()
+    message = io_worker.peak_receive_buf()
     while len(message) > 4:
       # TODO: this is taken directly from of_01.Connection. The only difference is the
       # event handlers. Refactor to reduce redundancy.
@@ -380,7 +380,7 @@ class ControllerConnection (object):
       msg_obj = self.ofp_msgs[ofp_type]()
       msg_obj.unpack(message)
       
-      io_worker.consume_read_buf(packet_length)
+      io_worker.consume_receive_buf(packet_length)
       # prime the next iteration of the loop
       message = io_worker.peak_read_buf()
             
