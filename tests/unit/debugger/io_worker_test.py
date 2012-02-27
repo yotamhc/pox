@@ -24,8 +24,8 @@ class IOWorkerTest(unittest.TestCase):
   def test_basic_receive(self):
     i = IOWorker()
     self.data = None
-    def d(worker, new_data):
-      self.data = new_data
+    def d(worker):
+      self.data = worker.peek_receive_buf()
     i.on_data_receive = d
     i.push_receive_data("bar")
     self.assertEqual(self.data, "bar")
@@ -36,9 +36,9 @@ class IOWorkerTest(unittest.TestCase):
   def test_receive_consume(self):
     i = IOWorker()
     self.data = None
-    def consume(worker, new_data):
-      self.data = new_data
-      worker.consume_receive_buf(len(new_data))
+    def consume(worker):
+      self.data = worker.peek_receive_buf()
+      worker.consume_receive_buf(len(self.data))
     i.on_data_receive = consume
     i.push_receive_data("bar")
     self.assertEqual(self.data, "bar")
@@ -56,21 +56,21 @@ class RecocoIOLoopTest(unittest.TestCase):
     loop = RecocoIOLoop()
     loop.stop()
 
-  def test_run(self):
+  def test_run_read(self):
     loop = RecocoIOLoop()
     (left, right) = MockSocket.pair()
     worker = loop.create_worker_for_socket(left)
 
     # callback for ioworker to record receiving
     self.received = None
-    def r(worker, data):
-      self.received = data
+    def r(worker):
+      self.received = worker.peek_receive_buf()
     worker.on_data_receive = r
 
-    # 'start' the run (dark generator magic here)
+    # 'start' the run (dark generator magic here). Does not actually execute run, but 'yield' a generator
     g = loop.run()
+    # g.next() will call it, and get as far as the 'yield select'
     select = g.next()
-    # this gets as far as the yield select
 
     # send data on other socket half
     right.send("hallo")
@@ -81,3 +81,21 @@ class RecocoIOLoopTest(unittest.TestCase):
     # that should result in the socket being red the data being handed
     # to the ioworker, the callback being called. Everybody happy.
     self.assertEquals(self.received, "hallo")
+
+  def test_run_write(self):
+    loop = RecocoIOLoop()
+    (left, right) = MockSocket.pair()
+    worker = loop.create_worker_for_socket(left)
+
+    worker.send("heppo")
+    # 'start' the run (dark generator magic here). Does not actually execute run, but 'yield' a generator
+    g = loop.run()
+    # g.next() will call it, and get as far as the 'yield select'
+    select = g.next()
+
+    # now we emulate the return value of the select ([rlist],[wlist], [elist])
+    g.send(([], [worker], []))
+
+    # that should result in the stuff being sent on the socket
+    self.assertEqual(right.recv(), "heppo")
+

@@ -18,7 +18,7 @@ class IOWorker(object):
   def __init__(self):
     self.send_buf = ""
     self.receive_buf = ""
-    self.on_data_receive = lambda worker, data: None
+    self.on_data_receive = lambda worker: None
 
   def send(self, data):
     """ send data from the client side. fire and forget. """
@@ -28,7 +28,10 @@ class IOWorker(object):
   def push_receive_data(self, new_data):
     """ notify client of new received data. """
     self.receive_buf += new_data
-    self.on_data_receive(self, self.receive_buf)
+    self.on_data_receive(self)
+
+  def peek_receive_buf(self):
+    return self.receive_buf
 
   def consume_receive_buf(self, l):
     """ called from the client to consume receive buffer """
@@ -113,7 +116,7 @@ class RecocoIOLoop(Task):
 
         for worker in wlist:
           try:
-            l = con.sock.send(worker.send_buf)
+            l = worker.socket.send(worker.send_buf)
             if l > 0:
               worker.consume_send_buf(l)
           except socket.error as (errno, strerror):
