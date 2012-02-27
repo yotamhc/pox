@@ -37,6 +37,7 @@ else:
 for c in controllers:
   command_line_args = map(lambda(x): string.replace(x, "__port__", str(c.port)),
                       map(lambda(x): string.replace(x, "__address__", str(c.address)), c.cmdline))
+  print command_line_args
   subprocess.Popen(command_line_args)
   
 io_loop = RecocoIOLoop()

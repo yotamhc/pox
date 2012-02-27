@@ -91,8 +91,8 @@ def connect_to_controllers(controller_info_list, io_worker_generator, switch_imp
       try:
         controller_socket.connect( (controller_info.address, controller_info.port) )
         break
-      except socket.error:
-        print >>sys.stderr, "Backing off %d seconds ..." % backoff_seconds
+      except socket.error as e:
+        print >>sys.stderr, "%s. Backing off %d seconds ..." % (str(e), backoff_seconds)
         if backoff_seconds >= 64:
           raise RuntimeError("Could not connect to controller %s:%d" % (controller_info.address, controller_info.port))
         else:
