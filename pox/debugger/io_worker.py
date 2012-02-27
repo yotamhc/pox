@@ -63,7 +63,7 @@ class RecocoIOWorker(IOWorker):
     self.pinger = pinger
 
   def fileno(self):
-    return self.socket.fileno
+    return self.socket.fileno()
 
   def send(self, data):
     IOWorker.send(self, data)
