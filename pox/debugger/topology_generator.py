@@ -83,25 +83,23 @@ def connect_to_controllers(controller_info_list, io_worker_generator, switch_imp
   
   for switch_impl in switch_impls:
     # TODO: what if the controller is slow to boot?
-    # Socket to from the switch_impl to the controller
+    # Socket from the switch_impl to the controller
     controller_socket = socket.socket()
-    # Set non-blocking
     controller_info = controller_info_cycler.next()
     backoff_seconds = 1
     while True:
       try:
         controller_socket.connect( (controller_info.address, controller_info.port) )
         break
-      except socket.error as (errno, strerror):
-        if errno == errno.ECONNREFUSED:
-          backoff_seconds <<= 1 
-          if backoff_seconds >= 64:
-            raise RuntimeError("Could not connect to controller %s:%d" % (controller_info.address, controller_info.port))
-          else:
-            time.sleep(backoff_seconds)
+      except socket.error:
+        print >>sys.stderr, "Backing off %d seconds ..." % backoff_seconds
+        if backoff_seconds >= 64:
+          raise RuntimeError("Could not connect to controller %s:%d" % (controller_info.address, controller_info.port))
         else:
-          raise RuntimeError(strerror)
+          time.sleep(backoff_seconds)
+        backoff_seconds <<= 1
         
+    # Set non-blocking
     controller_socket.setblocking(0)
     io_worker = io_worker_generator(controller_socket)
     switch_impl.set_socket(io_worker)
