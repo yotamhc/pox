@@ -18,9 +18,9 @@ class IOWorker(object):
   def __init__(self):
     self.send_buf = ""
     self.receive_buf = ""
-    self.on_data_receive = lambda: None
+    self.on_data_receive = lambda worker, data: None
 
-  def send(object, data):
+  def send(self, data):
     """ send data from the client side. fire and forget. """
     assert_type("data", data, [bytes], none_ok=False)
     self.send_buf += data
@@ -32,7 +32,7 @@ class IOWorker(object):
 
   def consume_receive_buf(self, l):
     """ called from the client to consume receive buffer """
-    assert(len(self.receive_buf) > l)
+    assert(len(self.receive_buf) >= l)
     self.receive_buf = self.receive_buf[l:]
 
   @property
@@ -51,6 +51,7 @@ class RecocoIOWorker(IOWorker):
   def __init__(self, socket, pinger):
     IOWorker.__init__(self)
     # list of (potentially partial) messages to send
+    self.socket = socket
     self.pinger = pinger
 
   def fileno(self):
@@ -67,14 +68,14 @@ class RecocoIOLoop(Task):
   _select_timeout = 5
   _BUF_SIZE = 8192
 
-  def __init__ (self, socket):
+  def __init__ (self):
     Task.__init__(self)
-    self.workers = Set()
+    self.workers = set()
     self.pinger = pox.lib.util.makePinger()
 
   def create_worker_for_socket(self, socket):
-    worker = IOWorker(socket, self.pinger)
-    self.workers.append(worker)
+    worker = RecocoIOWorker(socket, self.pinger)
+    self.workers.add(worker)
     self.pinger.ping()
     return worker
 
@@ -84,33 +85,33 @@ class RecocoIOLoop(Task):
 
   def run (self):
     self.running = True
-    while self.running
+    while self.running:
       try:
-        read_sockets = [ worker for worker in self.workers ] + [ self.pinger ]
+        read_sockets = list(self.workers) + [ self.pinger ]
         write_sockets = [ worker for worker in self.workers if worker.ready_to_send ]
-        exception_sockets = [ worker in self.workers ]
+        exception_sockets = list(self.workers)
 
         rlist, wlist, elist = yield Select(read_sockets, write_sockets,
                 exception_sockets, self._select_timeout)
 
-        if self.pinger in read_sockets:
+        if self.pinger in rlist :
           self.pinger.pongAll()
-          read_sockets.remove(self.pinger)
+          rlist.remove(self.pinger)
 
-        for worker in exception_sockets:
+        for worker in elist:
           worker.close()
           self.workers.remove(worker)
 
-        for worker in read_sockets:
+        for worker in rlist:
           try:
-            data = self.socket.recv(_BUF_SIZE)
-            worker.push_recv_data(data)
+            data = worker.socket.recv(self._BUF_SIZE)
+            worker.push_receive_data(data)
           except socket.error as (errno, strerror):
             con.msg("Socket error: " + strerror)
             worker.close()
             self.workers.remove(worker)
 
-        for worker in write_sockets:
+        for worker in wlist:
           try:
             l = con.sock.send(worker.send_buf)
             if l > 0:
