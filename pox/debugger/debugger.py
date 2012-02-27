@@ -208,11 +208,12 @@ class FuzzTester (EventMixin):
     ''' Decide whether to delay or deliver packets '''
     for switch_impl in self.live_switches():
       # Check reads
-      if switch_impl.io_worker.has_pending_receives():
+      # TODO: shouldn't be sticking our hands into switch_impl._connection
+      if switch_impl._connection.io_worker.has_pending_receives():
         check_deliver(switch_impl, switch_impl.io_worker.permit_receive)
       
       # Check writes
-      if switch_impl.io_worker.has_pending_receives():
+      if switch_impl._connection.io_worker.has_pending_receives():
         check_deliver(switch_impl, switch_impl.io_worker.permit_send)
 
   def check_switch_crashes(self):
