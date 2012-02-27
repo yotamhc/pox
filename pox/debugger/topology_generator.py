@@ -84,11 +84,12 @@ def connect_to_controllers(controller_info_list, io_worker_generator, switch_imp
   for switch_impl in switch_impls:
     # TODO: what if the controller is slow to boot?
     # Socket from the switch_impl to the controller
-    controller_socket = socket.socket()
+    controller_socket = None
     controller_info = controller_info_cycler.next()
     backoff_seconds = 1
     while True:
       try:
+        controller_socket = socket.socket()
         controller_socket.connect( (controller_info.address, controller_info.port) )
         break
       except socket.error as e:
