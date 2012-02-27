@@ -135,18 +135,16 @@ class FuzzTester (EventMixin):
     self.loop()
 
   def loop(self):
-    self.logical_time += 1
-    self.trigger_events()
-    msg.event("Round %d completed." % self.logical_time)
-    # TODO: print out the state of the network at each timestep? Take a
-    # verbose flag..
-    self.invariant_check_prompt()
-    answer = msg.raw_input('Continue to next round? [Yn]').strip()
-    if answer != '' and answer.lower() != 'y':
-      self.stop()
-    else:
-      # loop again!
-      core.callLater(self.loop)
+    while True:
+      self.logical_time += 1
+      self.trigger_events()
+      msg.event("Round %d completed." % self.logical_time)
+      # TODO: print out the state of the network at each timestep? Take a
+      # verbose flag..
+      self.invariant_check_prompt()
+      answer = msg.raw_input('Continue to next round? [Yn]').strip()
+      if answer != '' and answer.lower() != 'y':
+        self.stop()
 
   def stop(self):
     self.running = False
