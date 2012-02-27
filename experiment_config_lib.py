@@ -1,4 +1,4 @@
-import itertools.count
+import itertools
 import os
 
 
