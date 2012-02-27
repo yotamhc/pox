@@ -65,7 +65,7 @@ class RecocoIOLoopTest(unittest.TestCase):
     self.received = None
     def r(worker):
       self.received = worker.peek_receive_buf()
-    worker.set_recieve_handler(r)
+    worker.set_receive_handler(r)
 
     # 'start' the run (dark generator magic here). Does not actually execute run, but 'yield' a generator
     g = loop.run()
