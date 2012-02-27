@@ -17,7 +17,11 @@ import argparse
 #   switches()                        => returns a list of pox.debugger.experiment_config_info.Switch objects
 
 # TODO: merge with Mininet
-parser = argparse.ArgumentParser(description="Run a debugger experiment. Note: must precede controller args with --")
+parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
+             description="Run a debugger experiment.\n"+
+                "Note: must precede controller args with --\n"+
+                "Example usage:\n"+
+                "$ ./pcc_experiment_loader.py -- ./pox.py --no-cli openflow.of_01 --address=__address__ --port=__port__")
 parser.add_argument("--config_file", help='optional experiment config file to load')
 parser.add_argument('controller_args', metavar='controller arg', nargs='*',
                    help='arguments to pass to the controller(s)')
