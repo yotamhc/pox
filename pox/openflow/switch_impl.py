@@ -382,7 +382,7 @@ class ControllerConnection (object):
       
       io_worker.consume_receive_buf(packet_length)
       # prime the next iteration of the loop
-      message = io_worker.peek_read_buf()
+      message = io_worker.peek_receive_buf()
             
       try:
         if ofp_type not in self.ofp_handlers:
