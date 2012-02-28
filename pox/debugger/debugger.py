@@ -202,26 +202,23 @@ class FuzzTester (EventMixin):
     pass
     
   def check_controlplane(self):
+    ''' Decide whether to delay or deliver packets '''
     def check_deliver(switch_impl, type, give_permission):
         if self.random.random() < self.controlplane_delay_rate:
-          msg.event("Giving permission for control plane %s for %s" % (type, str(switch_impl)))
+          log.debug("Giving permission for control plane %s for %s" % (type, str(switch_impl)))
           give_permission()
         else:
-          msg.event("Delaying control plane delivery for %s" % str(switch_impl))
+          log.debug("Delaying control plane %s for %s" % (type, str(switch_impl)))
         
-    ''' Decide whether to delay or deliver packets '''
     for switch_impl in self.live_switches():
       # Check reads
       # TODO: shouldn't be sticking our hands into switch_impl._connection
       if switch_impl._connection.io_worker.has_pending_receives():
-        msg.event("Pending receive")
         check_deliver(switch_impl, "receive", switch_impl._connection.io_worker.permit_receive)
       
       # Check writes
       if switch_impl._connection.io_worker.has_pending_sends():
-        msg.event("Pending send")
         check_deliver(switch_impl, "send", switch_impl._connection.io_worker.permit_send)
-      pass
 
   def check_switch_crashes(self):
     ''' Decide whether to crash or restart switches, links and controllers '''
