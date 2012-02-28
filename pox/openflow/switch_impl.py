@@ -202,7 +202,7 @@ class SwitchImpl(EventMixin):
   # ==================================== #
 
   def process_packet(self, packet, in_port):
-    """ process a packet the way a real OpenFlow switch would.
+    """ process a dataplane packet the way a real OpenFlow switch would.
         packet: an instance of ethernet
         in_port: the integer port number
     """
