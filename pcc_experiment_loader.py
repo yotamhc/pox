@@ -2,8 +2,8 @@
 
 from pox.debugger.debugger import FuzzTester
 import pox.debugger.topology_generator as default_topology
-from pox.debugger.io_worker import *
-from experiment_config_lib import *
+from pox.debugger.io_worker import RecocoIOLoop 
+from experiment_config_lib import Controller
 from pox.lib.recoco.recoco import Scheduler
 
 import sys

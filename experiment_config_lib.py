@@ -1,5 +1,4 @@
 import itertools
-import os
 
 
 class Controller (object):
