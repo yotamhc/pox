@@ -18,11 +18,12 @@ of switches. For example, with N = 3:
 TODO: should this topology include Hosts as well?
 '''
 
-from pox.debugger.debugger_entities import *
-from pox.openflow.switch_impl import *
+from debugger_entities import FuzzSwitchImpl
+from pox.openflow.switch_impl import ofp_phy_port, EthAddr, SwitchDpPacketOut
 import socket
 import time
 import errno
+import sys
 
 class Cycler():
   """

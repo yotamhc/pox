@@ -7,10 +7,11 @@ import exceptions
 import sys
 import errno
 import logging
+import Queue
+import socket
 
-from pox.core import core
-from pox.lib.recoco import *
 from pox.lib.util import assert_type, makePinger
+from pox.lib.recoco import Select, Task
 
 log = logging.getLogger()
 
@@ -80,8 +81,8 @@ class DeferredIOWorker(object):
   def __init__(self, io_worker):
     self.io_worker = io_worker
     # Thread-safe read and write queues of indefinite length
-    self.receive_queue = Queue()
-    self.send_queue = Queue()
+    self.receive_queue = Queue.Queue()
+    self.send_queue = Queue.Queue()
   
   def permit_send(self):
     '''

@@ -9,9 +9,8 @@
 #       provide them with the normal POX cli + the simulated events
 
 import pox.openflow.libopenflow_01 as of
-from pox.lib.revent.revent import *
+from pox.lib.revent import EventMixin
 
-from debugger_entities import *
 from traffic_generator import TrafficGenerator
 from invariant_checker import InvariantChecker
 

@@ -18,6 +18,8 @@ processes. To emulate, we'll want to :
 """
 
 from pox.openflow.switch_impl import SwitchImpl
+ 
+import pickle
 
 # TODO: model hosts in the network!
 
