@@ -10,6 +10,8 @@ import sys
 import string
 import subprocess
 import argparse
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
 # We use python as our DSL for specifying experiment configuration  
 # The module can define the following functions:
@@ -56,7 +58,8 @@ io_loop = RecocoIOLoop()
 # HACK
 (panel, switch_impls) = default_topology.populate(controllers,
                                                    io_loop.create_deferred_worker_for_socket,
-                                                   io_loop.remove_worker)
+                                                   io_loop.remove_worker,
+                                                   num_switches=1)
   
 scheduler = Scheduler()
 scheduler.schedule(io_loop)
