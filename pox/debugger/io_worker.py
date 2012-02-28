@@ -134,6 +134,10 @@ class DeferredIOWorker(object):
   def close(self):
     return self.io_worker.close()
   
+  @property
+  def socket(self):
+    return self.io_worker.socket
+  
   def peek_receive_buf(self):
     return self.io_worker.peek_receive_buf()
 
@@ -166,6 +170,12 @@ class RecocoIOLoop(Task):
     real_worker = self.create_worker_for_socket(socket)
     deferred_worker = DeferredIOWorker(real_worker)
     return deferred_worker
+  
+  def remove_worker(self, worker):
+    if isinstance(worker, DeferredIOWorker):
+      worker = worker.io_worker
+    worker.close()
+    self.workers.discard(worker)
 
   def stop(self):
     self.running = False
