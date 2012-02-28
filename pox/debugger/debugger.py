@@ -209,11 +209,11 @@ class FuzzTester (EventMixin):
       # Check reads
       # TODO: shouldn't be sticking our hands into switch_impl._connection
       if switch_impl._connection.io_worker.has_pending_receives():
-        check_deliver(switch_impl, switch_impl.io_worker.permit_receive)
+        check_deliver(switch_impl, switch_impl._connection.io_worker.permit_receive)
       
       # Check writes
       if switch_impl._connection.io_worker.has_pending_sends():
-        check_deliver(switch_impl, switch_impl.io_worker.permit_send)
+        check_deliver(switch_impl, switch_impl._connection.io_worker.permit_send)
 
   def check_switch_crashes(self):
     ''' Decide whether to crash or restart switches, links and controllers '''
