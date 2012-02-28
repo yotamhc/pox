@@ -37,12 +37,15 @@ if hasattr(config, 'controllers'):
 else:
   controllers = [Controller(args.controller_args)] 
 
+child_processes = []
+
 # Boot the controllers
 for c in controllers:
   command_line_args = map(lambda(x): string.replace(x, "__port__", str(c.port)),
                       map(lambda(x): string.replace(x, "__address__", str(c.address)), c.cmdline))
   print command_line_args
-  subprocess.Popen(command_line_args)
+  child = subprocess.Popen(command_line_args)
+  child_processes.append(child)
   
 io_loop = RecocoIOLoop()
 
@@ -59,5 +62,5 @@ scheduler = Scheduler()
 scheduler.schedule(io_loop)
 
 # TODO: allow user to configure the fuzzer parameters, e.g. drop rate
-debugger = FuzzTester()
+debugger = FuzzTester(child_processes)
 debugger.start(panel, switch_impls)

@@ -71,7 +71,8 @@ class FuzzTester (EventMixin):
   it will inject intelligently chosen mock events (and observe
   their responses?)
   """
-  def __init__(self):
+  def __init__(self, child_processes):
+    self.child_processes = child_processes
     self.running = False
     self.panel = None
     self.switch_impls = []
@@ -150,6 +151,10 @@ class FuzzTester (EventMixin):
   def stop(self):
     self.running = False
     msg.event("Fuzzer stopping...")
+    msg.event("Killing controllers...")
+    for child in self.child_processes:
+      # SIGTERM for now
+      child.terminate()
     msg.event("Total rounds completed: %d" % self.logical_time)
     msg.event("Total packets sent: %d" % self.packets_sent)
     os._exit(0)
