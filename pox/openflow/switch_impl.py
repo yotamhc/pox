@@ -101,9 +101,6 @@ class SwitchImpl(EventMixin):
     connection.ofp_handlers = self.ofp_handlers
     self._connection = connection
 
-  def demux_openflow(self, raw_bytes):
-    pass
-
   # ==================================== #
   #    Reactive OFP processing           #
   # ==================================== #
