@@ -184,7 +184,8 @@ class SwitchImpl(EventMixin):
     if (buffer_id == None):
       buffer_id = int("0xFFFFFFFF",16)
 
-    if xid == None: xid = self.xid_count.next()
+    if xid == None:
+      xid = self.xid_count.next()
     msg = ofp_packet_in(xid=xid, in_port = in_port, buffer_id = buffer_id, reason = reason,
                         data = packet.pack())
     self._connection.send(msg)
@@ -195,6 +196,10 @@ class SwitchImpl(EventMixin):
     self.log.debug("Send echo %s" % self.name)
     msg = ofp_echo_request()
     self._connection.send(msg)
+    
+  # ==================================== #
+  #   Dataplane processing               #
+  # ==================================== #
 
   def process_packet(self, packet, in_port):
     """ process a packet the way a real OpenFlow switch would.
