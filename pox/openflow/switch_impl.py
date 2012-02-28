@@ -16,14 +16,14 @@ Created by ykk
 
 from pox.lib.util import assert_type
 from pox.lib.revent import Event, EventMixin
-from pox.core import core
 from pox.openflow.libopenflow_01 import *
-from pox.openflow.of_01 import make_type_to_class_table, deferredSender
-from pox.openflow.flow_table import TableEntry, SwitchFlowTable
+from pox.openflow.util import make_type_to_class_table
+from pox.openflow.flow_table import SwitchFlowTable
 
 from errno import EAGAIN
 from collections import namedtuple
 import itertools
+import logging
 
 class SwitchDpPacketOut (Event):
   """ Event raised by SwitchImpl when a dataplane packet is sent out a port """
@@ -52,7 +52,7 @@ class SwitchImpl(EventMixin):
     self.name = name
     if self.name is None:
       self.name = str(dpid)
-    self.log = core.getLogger(self.name)
+    self.log = logging.getLogger(self.name)
     ##Number of buffers
     self.n_buffers = n_buffers
     ##Number of tables
@@ -340,7 +340,7 @@ class ControllerConnection (object):
     self.io_worker.set_receive_handler(self.read)
     ControllerConnection.ID += 1
     self.ID = ControllerConnection.ID
-    self.log = core.getLogger("ControllerConnection(id=%d)" % self.ID)
+    self.log = logging.getLogger("ControllerConnection(id=%d)" % self.ID)
     ## OpenFlow Message map
     self.ofp_msgs = make_type_to_class_table()
     ## Hash from ofp_type -> handler(packet)
