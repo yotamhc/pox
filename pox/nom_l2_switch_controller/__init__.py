@@ -21,7 +21,7 @@ This package contains a nom-based L2 learning switch.
 from pox.core import core
 log = core.getLogger("nom_l2_switch_controller.init")
 
-def launch (debug=False, distributed=False):
+def launch (distributed=False):
   # TODO: need a more transparent mechanism for specifying the debug flag...
   """
   Starts a NOM-based L2 learning switch, along with the discovery and topology modules
@@ -31,8 +31,8 @@ def launch (debug=False, distributed=False):
   elif type(distributed) == str:
     distributed = int(distributed)
 
-  import pox.openflow
-  pox.openflow.launch()
+  import pox.openflow.connection_arbiter
+  pox.openflow.connection_arbiter.launch()
 
   import pox.openflow.topology
   pox.openflow.topology.launch()
@@ -40,15 +40,8 @@ def launch (debug=False, distributed=False):
   import pox.topology
   pox.topology.launch()
 
-  # TODO: move debugging related stuff to debugger.__init__.launch
-  # The component being debugged shouldn't not know about that
-  if debug:
-    # populates the topology and prepares debug event loop (but does not launch it)
-    import pox.debugger
-    pox.debugger.launch()
-  else:
-    import pox.openflow.discovery
-    pox.openflow.discovery.launch()
+  import pox.openflow.discovery
+  pox.openflow.discovery.launch()
 
   from pox.core import core
   if distributed:
