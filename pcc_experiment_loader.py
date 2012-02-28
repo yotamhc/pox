@@ -51,7 +51,9 @@ io_loop = RecocoIOLoop()
 #else:
 #  switches = []
 # HACK
-(panel, switch_impls) = default_topology.populate(controllers, io_loop.create_deferred_worker_for_socket)
+(panel, switch_impls) = default_topology.populate(controllers,
+                                                   io_loop.create_deferred_worker_for_socket,
+                                                   io_loop.remove_worker)
   
 scheduler = Scheduler()
 scheduler.schedule(io_loop)

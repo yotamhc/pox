@@ -18,6 +18,7 @@ processes. To emulate, we'll want to :
 """
 
 from pox.openflow.switch_impl import SwitchImpl
+from pox.lib.util import connect_socket_with_backoff
  
 import pickle
 
@@ -27,26 +28,41 @@ class FuzzSwitchImpl (SwitchImpl):
   """
   NOTE: a mock switch implementation for testing purposes. Can simulate dropping dead.
   """
-  def __init__ (self, *args, **kw):
-    SwitchImpl.__init__(self, *args, **kw)
+  def __init__ (self, io_worker_constructor, io_worker_destructor, dpid, name=None, ports=4, miss_send_len=128,
+                n_buffers=100, n_tables=1, capabilities=None):
+    SwitchImpl.__init__(self, dpid, name=None, ports=4, miss_send_len=128,
+      n_buffers=100, n_tables=1, capabilities=None)
     self.failed = False
+    self.io_worker_constructor = io_worker_constructor
+    self.io_worker_destructor = io_worker_destructor
 
   def _handle_ConnectionUp(self, event):
     self._setConnection(event.connection, event.ofp)
 
   def fail(self):
-    if self.failed:
-      self.log.warn("Switch already failed")
-    self.failed = True
     # TODO: depending on the type of failure, a real switch failure
     # might not lead to an immediate disconnect
-    self._connection.disconnect()
+    if self.failed:
+      self.log.warn("Switch already failed")
+      return
+    self.failed = True
+    
+    # Store the controller's address and port so we can reconnect later
+    (self.controller_address, self.controller_port) = self._connection.io_worker.socket.getpeername()
+    self.io_worker_destructor(self._connection.io_worker)
+    self._connection = None
 
   def recover(self):
     if not self.failed:
       self.log.warn("Switch already up")
+      return
     self.failed = False
-    self.connect(self.switch_impl.ports.values())
+    # Reconnect by creating a brand new tcp socket
+    controller_socket = connect_socket_with_backoff(self.controller_address, self.controller_port)
+    # Set non-blocking
+    controller_socket.setblocking(0)
+    io_worker = self.io_worker_constructor(controller_socket)
+    self.set_socket(io_worker)
 
   def serialize(self):
     # Skip over non-serializable data, e.g. sockets
