@@ -77,7 +77,7 @@ class FuzzTester (EventMixin):
     self.switch_impls = []
 
     # TODO: make it easier for client to tweak these
-    self.switch_failure_rate = 0.5
+    self.switch_failure_rate = 0.01
     self.switch_recovery_rate = 0.5
     self.control_channel_failure_rate = 0.0
     self.control_channel_recovery_rate = 0.0
@@ -212,7 +212,7 @@ class FuzzTester (EventMixin):
         check_deliver(switch_impl, switch_impl.io_worker.permit_receive)
       
       # Check writes
-      if switch_impl._connection.io_worker.has_pending_receives():
+      if switch_impl._connection.io_worker.has_pending_sends():
         check_deliver(switch_impl, switch_impl.io_worker.permit_send)
 
   def check_switch_crashes(self):
@@ -258,7 +258,7 @@ class FuzzTester (EventMixin):
     for switch_impl in self.live_switches():
       if self.random.random() < self.traffic_generation_rate:
         # FIXME do something smarter here than just generate packet ins
-        log.debug("injecting a random packet")
+        msg.event("injecting a random packet")
         # event_type = self.random.choice(switch_impl._eventMixin_handlers.keys()) 
         traffic_type = "icmp_ping"
         # Generates a packet, and feeds it to the switch_impl
