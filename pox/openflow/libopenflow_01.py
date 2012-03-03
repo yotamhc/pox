@@ -43,6 +43,11 @@ _PAD4 = _PAD*4
 _PAD6 = _PAD*6
 
 
+import json
+
+_json_encoder = json.JSONEncoder()
+_json_decoder = json.JSONDecoder()
+
 EMPTY_ETH = EthAddr(None)
 
 MAX_XID = 0x7fFFffFF
@@ -87,6 +92,31 @@ class ofp_header (object):
     if self.header_type not in ofp_type_map:
       return (False, "type is not a known message type")
     return (True, None)
+
+  def _get_json_dict (self):
+    return dict(((k,v) for k,v in self.__dict__.iteritems()
+                if not k.startswith("_") and
+                not hasattr(v, '__call__') and
+                k not in ["header_type", "version", "xid", "length"]))
+
+  def _get_json_header (self):
+    if self.xid is None: self.xid = generateXID()
+    t = ofp_type_map.get(self.header_type)
+    if t is None: t = "#" + str(self.header_type)
+    return {'version':'1.0','xid':self.xid,'type':t}
+
+  def pack_json (self):
+    d = self._get_json_dict()
+    d['header'] = self._get_json_header()
+    return _json_encoder.encode(d)
+
+  @classmethod
+  def _unpack_json_dict (cls, d):
+    h = d['header']
+    del d['header']
+    r = cls(**d)
+    r.xid = h['xid']
+    return r
 
   def pack (self, assertstruct=True):
     if self.xid is None:
@@ -1315,8 +1345,8 @@ class ofp_action_vendor_header (object):
 #3. Controller-to-Switch Messages
 
 ##3.1 Handshake
-# was ofp_switch_features
-class ofp_features_reply (ofp_header):
+# was ofp_features_reply
+class ofp_switch_features(ofp_header):
   def __init__ (self, **kw):
     ofp_header.__init__(self)
     self.datapath_id = 0
@@ -1394,7 +1424,7 @@ class ofp_features_reply (ofp_header):
       outstr += obj.show(prefix + '  ')
     return outstr
 
-ofp_switch_features = ofp_features_reply
+ofp_features_reply = ofp_switch_features # Better name
 
 ofp_capabilities_rev_map = {
   'OFPC_FLOW_STATS'   : 1,
@@ -3557,7 +3587,7 @@ def _init ():
     if len(v) > 0 and v[0] == 0 and v[-1] == len(v)-1:
       globals()[name] = v
 
-    # Generate gobals
+    # Generate globals
     for k,v in m.iteritems():
       globals()[k] = v
 
@@ -3663,3 +3693,11 @@ ofp_match_data = {
   'tp_src' : (0, OFPFW_TP_SRC),
   'tp_dst' : (0, OFPFW_TP_DST),
 }
+
+def json_decode (j):
+  d = _json_decoder.decode(j)
+  t = d['header']['type']
+  assert t in ofp_type_rev_map
+  t = "ofp_" + t[5:].lower()
+  c = globals()[t]
+  return c._unpack_json_dict(d)
