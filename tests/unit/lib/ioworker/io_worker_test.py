@@ -8,8 +8,8 @@ import unittest
 
 sys.path.append(os.path.join(os.path.dirname(__file__), *itertools.repeat("..", 3)))
 
-from pox.debugger.mock_socket import MockSocket
-from pox.debugger.io_worker import *
+from pox.lib.mock_socket import MockSocket
+from pox.lib.io_worker import IOWorker
 from nose.tools import eq_
 
 class IOWorkerTest(unittest.TestCase):

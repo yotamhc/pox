@@ -7,7 +7,7 @@ from copy import copy
 
 sys.path.append(os.path.dirname(__file__) + "/../../..")
 
-from pox.debugger.mock_socket import MockSocket
+from pox.lib.mock_socket import MockSocket
 
 class MockSocketTest(unittest.TestCase):
   def setUp(self):
