@@ -88,11 +88,6 @@ class RecocoIOLoop(Task):
     self.pinger.ping()
     return worker
 
-  def create_deferred_worker_for_socket(self, socket):
-    real_worker = self.create_worker_for_socket(socket)
-    deferred_worker = DeferredIOWorker(real_worker)
-    return deferred_worker
-
   def remove_worker(self, worker):
     if isinstance(worker, DeferredIOWorker):
       worker = worker.io_worker
