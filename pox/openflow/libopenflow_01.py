@@ -122,7 +122,7 @@ class ofp_header (object):
   def _unpack_json_string(cls, s):
     try:
       d = _json_decoder.decode(s)
-      return self._unpack_json_dict(d)
+      return cls._unpack_json_dict(d)
     except ValueError:
       return None #TODO what should be done if json can't parse?
 

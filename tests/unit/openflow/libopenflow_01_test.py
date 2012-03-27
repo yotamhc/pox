@@ -181,6 +181,14 @@ class ofp_command_test(unittest.TestCase):
     self.assertEqual(o, unpacked, "pack_unpacked -- original != unpacked\n===Original:\n%s\n===Repacked:%s\n" % (show(o), show(unpacked)))
     return unpacked
 
+  def _test_json_pack_unpack(self, o, ofp_type):
+    """ check that packing and unpacking an ofp header object works correctly.
+    this is only meant to test ofp_header class packing and unpacking. """
+    json_string = o.pack_json()
+    o_constructed = ofp_type._unpack_json_string(json_string)
+    self.assertIsNotNone(o_constructed)
+    self.assertEqual(o, o_constructed, "json_pack_unpacked -- original != repacked\n===Original:\n%s\n===Repacked:\n%s\n" % (o, o_constructed))
+
   def test_header_pack_unpack(self):
     for kw in ( { "header_type": OFPT_PACKET_OUT, "xid": 1 },
                 { "header_type": OFPT_FLOW_MOD, "xid": 2 }):
