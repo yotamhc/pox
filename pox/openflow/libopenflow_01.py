@@ -118,6 +118,15 @@ class ofp_header (object):
     r.xid = h['xid']
     return r
 
+  @classmethod
+  def _unpack_json_string(cls, s):
+    try:
+      d = _json_decoder.decode(s)
+      return self._unpack_json_dict(d)
+    except ValueError:
+      return None #TODO what should be done if json can't parse?
+
+
   def pack (self, assertstruct=True):
     if self.xid is None:
       self.xid = generateXID()
