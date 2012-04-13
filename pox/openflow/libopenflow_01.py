@@ -48,7 +48,7 @@ EMPTY_ETH = EthAddr(None)
 
 MAX_XID = 0x7fFFffFF
 _nextXID = 1
-USE_MPLS_MATCH = False
+USE_MPLS_MATCH = True 
 
 def generateXID ():
   global _nextXID
