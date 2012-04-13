@@ -518,7 +518,7 @@ class Graph (object):
     ports = defaultdict(_void)
     for n1, n2, k, d in self._g.edges([node], data=True, keys=True):
       p = d[LINK]
-      assert n1 is node
+      assert n1 is node or n2 is node
       assert ports.get(p[node]) is None
       ports[p[node][1]] = p.other(node)
     return ports
