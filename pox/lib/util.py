@@ -381,7 +381,7 @@ def hexdump (data):
     o += l
   return o
 
-def connect_socket_with_backoff(address, port, max_backoff_seconds=32):
+def connect_socket_with_backoff(address, port, max_backoff_seconds=32, non_blocking = False):
   '''
   Connect to the given address and port. If the connection attempt fails, 
   exponentially back off, up to the max backoff
@@ -392,18 +392,22 @@ def connect_socket_with_backoff(address, port, max_backoff_seconds=32):
   sock = None
   while True:
     try:
-      sock = socket.socket()
-      sock.connect( (address, port) )
-      break
-    except socket.error as e:
-      print >>sys.stderr, "%s. Backing off %d seconds ..." % (str(e), backoff_seconds)
-      if backoff_seconds >= max_backoff_seconds:
-        raise RuntimeError("Could not connect to controller %s:%d" % (address, port))
+        sock = socket.socket()
+        if non_blocking:
+          sock.setblocking(0)
+        sock.connect( (address, port) )
+        break
+    except socket.error as (e, message):
+      if not non_blocking or e != 115:
+        print >>sys.stderr, "%s. Backing off %d seconds ..." % (str((e, message)), backoff_seconds)
+        if backoff_seconds >= max_backoff_seconds:
+          raise RuntimeError("Could not connect to controller %s:%d" % (address, port))
+        else:
+          time.sleep(backoff_seconds)
+        backoff_seconds <<= 1
       else:
-        time.sleep(backoff_seconds)
-      backoff_seconds <<= 1
+        break
   return sock
-
 if __name__ == "__main__":
   def cb (t,k,v): print v
   l = DirtyList([10,20,30,40,50])
