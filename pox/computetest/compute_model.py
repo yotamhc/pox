@@ -39,6 +39,12 @@ class LXbars(object):
   def add_switch(self, switch):
     log.debug(str.format("Added {0} to {1}", switch.dpid, self.id)) 
     self.switches[switch.dpid] = switch
+  def finalize(self):
+    from copy import deepcopy
+    for switch in switches.values():
+      switch.internal_labels = deepcopy(switches.keys())
+      switch.tables == deepcopy(external_links)
+      switch.tables.extend(deepcopy(internal_links))
   def add_link(self, link):
     assert(link.dpid1 in self.switches or link.dpid2 in self.switches)
     if link.dpid1 in self.switches and link.dpid2 in self.switches:
@@ -55,6 +61,8 @@ class Switch(object):
   def __init__(self, dpid, connection):
     self.dpid = dpid
     self.connection = connection
+    self.internal_labels = {}
+    self.tables = {}
 class Controller(EventMixin):
   def __init__(self, filename):
     self.lxbars = {}
@@ -85,13 +93,18 @@ class Controller(EventMixin):
     def normalize(link):
       return (link if link.dpid1 < link.dpid2 else Discovery.Link(link.dpid2, link.port2, link.dpid1, link.port1))
     link = normalize(event.link)
+    lxbar_mod = set()
     if link not in all_links:
       all_links[link] = 0
       lxbar1 = (self.switch_to_lxbar[link.dpid1] if link.dpid1 in self.switch_to_lxbar else 1)
       lxbar2 = (self.switch_to_lxbar[link.dpid2] if link.dpid2 in self.switch_to_lxbar else 1)
       self.lxbars[lxbar1].add_link(link)
       self.lxbars[lxbar2].add_link(link)
+      lxbar_mod.add(lxbar1)
+      lxbar_mod.add(lxbar2)
       print str.format("Total links = {0}", len(all_links))
+    for lxbar in lxbar_mod:
+      self.lxbars[lxbar].finalize()
   def LXBarLabelForExternalPort(self, dpid):
       return (self.switch_to_lxbar[dpid] if dpid in self.switch_to_lxbar else 1)
 def launch (filename=None):
