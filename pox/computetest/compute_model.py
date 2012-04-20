@@ -41,10 +41,10 @@ class LXbars(object):
     self.switches[switch.dpid] = switch
   def finalize(self):
     from copy import deepcopy
-    for switch in switches.values():
-      switch.internal_labels = deepcopy(switches.keys())
-      switch.tables == deepcopy(external_links)
-      switch.tables.extend(deepcopy(internal_links))
+    for switch in self.switches.values():
+      switch.internal_labels = deepcopy(self.switches.keys())
+      switch.tables == deepcopy(self.external_links)
+      switch.internal = deepcopy(list(self.internal_links))
   def add_link(self, link):
     assert(link.dpid1 in self.switches or link.dpid2 in self.switches)
     if link.dpid1 in self.switches and link.dpid2 in self.switches:
@@ -63,6 +63,7 @@ class Switch(object):
     self.connection = connection
     self.internal_labels = {}
     self.tables = {}
+    self.internal = []
 class Controller(EventMixin):
   def __init__(self, filename):
     self.lxbars = {}
