@@ -38,10 +38,10 @@ class LXbars(object):
     self.external_links = set()
   def add_switch(self, switch):
     log.debug(str.format("Added {0} to {1}", switch.dpid, self.id)) 
-    self.switches[switch] = switch
+    self.switches[switch.dpid] = switch
   def add_link(self, link):
     assert(link.dpid1 in self.switches or link.dpid2 in self.switches)
-    if link.dpdid1 in self.switches and link.dpdid2 in self.switches:
+    if link.dpid1 in self.switches and link.dpid2 in self.switches:
       if link not in self.internal_links:
         self.internal_links.add(link)
     else:
