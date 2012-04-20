@@ -63,7 +63,7 @@ class Controller(EventMixin):
     if filename is not None:
       import json
       from os.path import expanduser
-      jsonf = open(expanduser(args.filename))
+      jsonf = open(expanduser(filename))
       objs = json.load(jsonf)
       for lxbar in objs['lxbs']:
         self.lxbars[int(lxbar)] = LXbars(lxbar, self)
