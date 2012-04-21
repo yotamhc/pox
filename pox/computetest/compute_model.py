@@ -42,7 +42,7 @@ class LXbars(object):
   def finalize(self):
     from copy import deepcopy
     for switch in self.switches.values():
-      switch.internal_labels = deepcopy(self.switches.keys())
+      switch.internal_labels = deepcopy(self.switches)
       switch.tables == deepcopy(self.external_links)
       switch.internal = deepcopy(list(self.internal_links))
   def add_link(self, link):
