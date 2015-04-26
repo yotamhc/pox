@@ -1504,44 +1504,78 @@ class ofp_match (ofp_base):
     outstr += append('tp_dst')
     return outstr
 
-  def check_overlap(self, other):
+  def overlaps_with (self, other, normalize=True):
+    """
+    Checks if this match overlaps with another
 
-    def overlap_fail(mine, other):
-      return (mine is not None and other is not None) and (mine != other)
+    Two entries overlap if there exists a packet that would match both.
+    In such a case, this method returns True.
 
-    def overlap_fail_nw(self_nw, other_nw):
+    This should be symmetric (a.overlaps_with(b) == b.overlaps_with(a)).
+    """
+    # Two matches cannot overlap if any of their fields cannot overlap.  So for
+    # each field, we try to prove that it can't overlap.  If it can't, then the
+    # match as a whole can't.  If we fail to prove this for every field, it's
+    # possible that a packet could match both.  We have these cases:
+    # 1) If the value in either match is wildcarded, then they might overlap.
+    # 2) If the values in both matches are the same, then they might overlap.
+    # 3) Otherwise (neither is wildcarded and they aren't the same), then this
+    #    field cannot overlap.
+    # So as soon as we hit a case 3, we know we can return False.  If we try
+    # each field and don't return before then, we return True.
+    # There's a bit of complication for IP addresses (which may be partially
+    # wildcarded), as well as to handle the fact that ofp_match doesn't
+    # canonize all field contents (specifically, for Eth src/dst).
+
+    me = self
+    if normalize:
+      def norm (m):
+        w = m._unwire_wildcards(m.wildcards)
+        if w != m.wildcards:
+          m = m.clone()
+          m.wildcards = w
+        return m
+      me = norm(me)
+      other = norm(other)
+
+    def do_not_overlap (mine, other):
+      # True if they don't overlap
+      if mine is None or other is None: return False
+      return f(mine) != f(other)
+
+    def do_not_overlap_nw (mine, other):
+      # True if they don't overlap
       self_addr = self_nw[0]
-      self_netbits = self_nw[1]
-
       other_addr = other_nw[0]
+      if self_addr is None or other_addr is None: return False
+
+      self_netbits = self_nw[1]
       other_netbits = other_nw[1]
+      netmask_bits = 32 - min(self_netbits, other_netbits)
+      self_msbs = self_addr.toUnsigned() >> netmask_bits
+      other_msbs = other_addr.toUnsigned() >> netmask_bits
 
-      if self_addr is not None and other_addr is not None:
-        netmask_bits = 32 - min(self_netbits, other_netbits)
-        self_msbs = (self_addr.toUnsigned() >> netmask_bits)
-        other_msbs = (other_addr.toUnsigned() >> netmask_bits)
+      return self_msbs != other_msbs
 
-        if self_msbs != other_msbs:
-          return True
-      return False
+    # Simple fields
+    if do_not_overlap(me.in_port, other.in_port): return False
+    if do_not_overlap(me.dl_vlan, other.dl_vlan): return False
+    if do_not_overlap(me.dl_vlan_pcp, other.dl_vlan_pcp): return False
+    if do_not_overlap(me.dl_type, other.dl_type): return False
+    if do_not_overlap(me.nw_tos, other.nw_tos): return False
+    if do_not_overlap(me.nw_proto, other.nw_proto): return False
+    if do_not_overlap(me.tp_src, other.tp_src): return False
+    if do_not_overlap(me.tp_dst, other.tp_dst): return False
 
-    # regular fields
-    if overlap_fail(self.in_port, other.in_port): return False
-    if overlap_fail(self.dl_vlan, other.dl_vlan): return False
-    if overlap_fail(self.dl_src, other.dl_src): return False
-    if overlap_fail(self.dl_dst, other.dl_dst): return False
-    if overlap_fail(self.dl_type, other.dl_type): return False
-    if overlap_fail(self.nw_proto, other.nw_proto): return False
-    if overlap_fail(self.tp_src, other.tp_src): return False
-    if overlap_fail(self.tp_dst, other.tp_dst): return False
-    if overlap_fail(self.dl_vlan_pcp, other.dl_vlan_pcp): return False
-    if overlap_fail(self.nw_tos, other.nw_tos): return False
+    # Slightly special handling for Ethernet fields
+    if do_not_overlap(EthAddr(me.dl_src), EthAddr(other.dl_src)): return False
+    if do_not_overlap(EthAddr(me.dl_dst), EthAddr(other.dl_dst)): return False
 
+    # Special handling for IPs
+    if do_not_overlap_nw(me.get_nw_dst(), other.get_nw_dst()): return False
+    if do_not_overlap_nw(me.get_nw_src(), other.get_nw_src()): return False
 
-    if overlap_fail_nw(self.get_nw_dst(), other.get_nw_dst()):
-      return False
-    if overlap_fail_nw(self.get_nw_src(), other.get_nw_src()):
-      return False
+    # Couldn't prove non-overlapping...
     return True
 
 class ofp_action_generic (ofp_action_base):
