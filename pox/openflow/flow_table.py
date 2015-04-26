@@ -1,4 +1,5 @@
 # Copyright 2011,2012,2013 Colin Scott
+# Copyright 2015 James McCauley
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,6 +19,7 @@ Implementation of an OpenFlow flow table
 
 from libopenflow_01 import *
 from pox.lib.revent import *
+from pox.lib.addresses import EthAddr, IPAddr
 
 import time
 import math
@@ -325,6 +327,79 @@ class FlowTable (EventMixin):
 
     return None
 
+  @staticmethod
+  def check_for_overlap (m1, m2, normalize=True):
+    """
+    Checks if two matches overlap
+
+    Two entries overlap if there exists a packet that would match both.
+    In such a case, this method returns True.
+    """
+    # There's some ugly stuff in here since ofp_match doesn't normalize its
+    # contents.
+    # The basic strategy is to look at each match field one by one.
+    # 1) If the value in either match is wildcarded, then they might overlap.
+    # 2) If the values in both matches are the same, then they might overlap.
+    # 3) Otherwise (neither is wildcarded and they aren't the same), then this
+    #    field cannot overlap.  Thus the matches cannot overlap, and we just
+    #    return False.
+    # If we go through each field and only ever hit case 1 or 2, then the
+    # matches may overlap each other and we return True.
+    # There's a bit of complication for IP addresses (which may be partially
+    # wildcarded), as well as to handle the fact that ofp_match doesn't
+    # canonize field contents (specifically, for Eth/IP src/dst).
+
+    if normalize:
+      def norm (m):
+        m = m.clone()
+        m.wildcards = m._unwire_wildcards(m.wildcards)
+        m.wildcards = m._normalize_wildcards(m.wildcards)
+        return m
+      m1 = norm(m1)
+      m2 = norm(m2)
+
+    for fieldname,(_,bits) in ofp_match_data.items():
+      if fieldname in ('nw_src','nw_dst'):
+        # Special case for IP addresses
+        v1 = getattr(m1, 'get_'+fieldname)()
+        v2 = getattr(m2, 'get_'+fieldname)()
+        if v1[0] is None or v2[0] is None:
+          # At least one is totally wildcarded, so they match.
+          continue
+        a1 = IPAddr(v1[0])
+        a2 = IPAddr(v2[0])
+        b1 = v1[1]
+        b2 = v2[1]
+        if b1 > b2:
+          b1,b2=b2,b1
+          a1,a2=a2,a1
+        # b1 is now the smaller value: a1 is the network with more addresses
+        if a2.in_network(a1, b1):
+          # Yup, these networks overlap.
+          continue
+        # Can't overlap
+        return False
+
+      else:
+        # Normal case (not IP addresses)
+        v1 = getattr(m1, fieldname)
+        v2 = getattr(m2, fieldname)
+        if fieldname in ('dl_src','dl_dst'):
+          v1 = EthAddr(v1)
+          v2 = EthAddr(v2)
+        if v1 is None or v2 is None:
+          # At least one is wildcarded, so they might match/overlap.
+          continue
+        # Okay, not matched by wildcards.  Do they actually match?
+        if v1 == v2:
+          # They match/overlap.
+          continue
+        # They can't overlap.
+        return False
+
+    # Each field might overlap -- matches might overlap.
+    return True
+
   def check_for_overlapping_entry (self, in_entry):
     """
     Tests if the input entry overlaps with another entry in this table.
@@ -346,8 +421,7 @@ class FlowTable (EventMixin):
         break
       elif e.effective_priority > priority:
         continue
-      else:
-        if e.is_matched_by(in_entry.match) or in_entry.is_matched_by(e.match):
-          return True
+      elif self.check_overlap(e.match, in_entry.match):
+        return True
 
     return False
