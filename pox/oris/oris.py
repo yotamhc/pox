@@ -85,11 +85,20 @@ class OpticalPathEdge:
         self.optical_link = optical_link
         self.lamb = lamb    
 
+    def __str__(self):
+        return '[ Link: %s, Lambda: %d ]' % (self.optical_link, self.lamb)
+
 
 class OpticalPath:
     def __init__(self, name, edges):
         self.name = name
         self.edges = edges
+
+    def __str__(self):
+        s_edges = []
+        for e in self.edges:
+            s_edges.append(str(e))
+        return '[ Optical path: %s, Links: [ %s ] ]' % (self.name, ','.join(s_edges))
 
 
 class OpticalLink:
@@ -117,7 +126,10 @@ class OpticalLink:
         lamb = self.used_lambdas[path_name]
         self.lambdas.append(lamb)
         return True
-        
+
+    def __str__(self):
+        return '[ Src: %s, Dst: %s ]' % (self.src_port, self.dst_port)
+
 
 class OpticalTopo:
     """
@@ -137,6 +149,9 @@ class OpticalTopo:
             if e.src_port.name not in self.optical_links:
                 self.optical_links[e.src_port.name] = dict()
             self.optical_links[e.src_port.name][e.dst_port.name] = e
+            if e.dst_port.name not in self.optical_links:
+                self.optical_links[e.dst_port.name] = dict()
+            self.optical_links[e.dst_port.name][e.src_port.name] = e
             self.g.add_nodes_from([ e.src_port.name, e.dst_port.name ])
             self.g.add_edge(e.src_port.name, e.dst_port.name, optical_link=e)
             
@@ -174,10 +189,12 @@ class OpticalTopo:
             self.unregister_lambda(e.optical_link, e.lamb)
             e.optical_link._unregister_path(optical_path.name, e.lamb)
         
-    def _name_path(self, edges):
-        first = edges[0].src_port.name
-        last = edges[len(edges) - 1].dst_port.name
-        rand = random.randint(65536)
+    def _name_path(self, edges, lamb=None):
+        first = edges[0].optical_link.src_port.name
+        last = edges[len(edges) - 1].optical_link.dst_port.name
+        rand = random.randint(1,65535)
+        l = '' if lamb is None else 'L%d_' % lamb
+        return '%s_to_%s_%s%d' % (first, last, l, rand)
     
     def _node_path_to_edges(self, p, lamb=None):
         # translates a path of nodes to an OpticalPath, where a lambda is assigned for
@@ -200,7 +217,7 @@ class OpticalTopo:
                 result.append(OpticalPathEdge(e, lamb))
                 last = node
         
-        return OpticalPath(self._name_path(result), result)
+        return OpticalPath(self._name_path(result, lamb=lamb), result)
 
     def find_path(self, src_name, dst_name, avoid=None):
         # finds a path of ports (edges) from src node to dst node, with variable lambda
@@ -208,7 +225,7 @@ class OpticalTopo:
         # avoid - a list of edges to avoid
         
         if avoid is None:
-            ps = self.g.all_shortest_paths(source=src_name, target=dst_name)
+            ps = nx.all_shortest_paths(self.g, source=src_name, target=dst_name)
             for p in ps:
                 res = self._node_path_to_edges(p)
                 if res is not None:
@@ -217,7 +234,7 @@ class OpticalTopo:
         else:
             # requested to avoid specific edges
             s_avoid = set(avoid)
-            ps = self.g.all_shortest_paths(source=src_name, target=dst_name)
+            ps = nx.all_shortest_paths(self.g, source=src_name, target=dst_name)
             if ps in None or len(ps) == 0: return None
             for p in ps:
                 ep = self._node_path_to_edges(p)
@@ -229,7 +246,11 @@ class OpticalTopo:
         # Returns a path with a fixed lambda
         # returns an OpticalPath object
         for lamb in self.fg:
-            p = self.fg[lamb].shortest_path(source=src_name, target=dst_name)
+            p = None
+            try:
+                p = nx.shortest_path(self.fg[lamb], source=src_name, target=dst_name)
+            except:
+                pass
             if p is not None:
                 return self._node_path_to_edges(p, lamb)
         return None
@@ -242,7 +263,6 @@ def read_topology_file(path):
         return OpticalTopo(links)
     finally:
         f.close()
-        
         
 
 class DefaultJsonEncoder(json.JSONEncoder):
@@ -304,13 +324,13 @@ def create_sample_topology_file(path):
     dpB = [None]
     dpC = [None]
     for i in range(1,4):
-        dpA.append(DomainPort('A:' + str(i),'a' + str(i)))
-        dpB.append(DomainPort('B:' + str(i),'b' + str(i)))
-        dpC.append(DomainPort('C:' + str(i),'c' + str(i)))
+        dpA.append(DomainPort('A','a' + str(i)))
+        dpB.append(DomainPort('B','b' + str(i)))
+        dpC.append(DomainPort('C','c' + str(i)))
 
-    h1 = HostPort('H1:1', 'h1')
-    h2 = HostPort('H2:1', 'h2')
-    h3 = HostPort('H3:1', 'h3')
+    h1 = HostPort('H1', 'h1')
+    h2 = HostPort('H2', 'h2')
+    h3 = HostPort('H3', 'h3')
     
     lambdas = [1,2,3,4,5,6,7,8,9,10]
     
@@ -337,5 +357,15 @@ def create_sample_topology_file(path):
 if __name__ == '__main__':
     # Test code
     #create_sample_topology_file('topology')
+    
     topo = read_topology_file('topology')
     oris = OpticalRouterInTheSky(topo)
+    
+    print 'General graph: ' + str(topo.g.edges)
+    
+    path_h1_h2 = oris.create_path_fixed_lambda('H1', 'H2')
+    path_h1_h3 = oris.create_path_fixed_lambda('H1', 'H3')
+
+    print 'H1 to H2: ' + str(path_h1_h2)
+    print 'H1 to H3: ' + str(path_h1_h3)
+    
